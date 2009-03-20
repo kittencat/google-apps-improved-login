@@ -28,7 +28,7 @@ class ShowLogin(webapp.RequestHandler):
     age = utils.getSAMLRequestAge(SAMLRequest)
     if (age < 0) or (age > 590): # is our SAMLRequest old or invalid?
       self.redirect('https://mail.google.com/a/' + domain)
-	  return
+      return
     template_values = {
       'samlrequest': self.request.get('SAMLRequest'),
       'relaystate': self.request.get('RelayState'),
