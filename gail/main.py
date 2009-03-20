@@ -31,8 +31,8 @@ class ShowLogin(webapp.RequestHandler):
       return
     template_values = {
     #we want to refresh 10 sec before SAMLRequest expires
-    'refresh': 590 - age
-    'samlrequest': self.request.get('SAMLRequest'),
+      'refresh': 590 - age,
+      'samlrequest': self.request.get('SAMLRequest'),
       'relaystate': self.request.get('RelayState'),
       'error': self.request.get('Error'),
       'domain': domain
