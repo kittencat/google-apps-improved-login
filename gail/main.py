@@ -21,7 +21,7 @@ import utils
 class ShowLogin(webapp.RequestHandler):
   def get(self):
     domain = settings.GAPPS_DOMAIN
-    if self.request.get('SAMLRequest') == None:
+    if self.request.get('SAMLRequest') == None or self.request.get('SAMLRequest') == '':
       self.redirect('https://mail.google.com/a/' + domain)
     SAMLRequest = self.request.get('SAMLRequest')
     age = utils.getSAMLRequestAge(SAMLRequest)
