@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
   <head>
-    <meta http-equiv="refresh" content="480;url=https://mail.google.com/a/{{ domain }}">
+    <meta http-equiv="refresh" content="{{ refresh }};url=https://mail.google.com/a/{{ domain }}">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <style type="text/css">
   	  <!--
@@ -49,7 +49,11 @@
 			  <input name="Login" tabindex="3" type="submit" value="Login">
               <input type="hidden" name="SAMLRequest" value="{{ samlrequest }}"/>
               <input type="hidden" name="RelayState" value="{{ relaystate }}"/>
-			</td>
+            </td>
+            <td>
+              <p><font color="red">{{ error }}</font></p>
+            </td>
+			  </td>
           </tr>
         </table>
         </form>
