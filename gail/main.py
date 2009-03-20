@@ -16,6 +16,7 @@ import gdata.tlslite.utils.compat
 import gdata.apps.service
 import urllib
 import settings
+import utils
 
 class ShowLogin(webapp.RequestHandler):
   def get(self):
