@@ -1,0 +1,38 @@
+import wsgiref.handlers
+from google.appengine.ext import webapp
+from google.appengine.api import users
+import atom.url
+import gdata.service
+import gdata.alt.appengine
+import gdata.apps.service
+import settings
+
+
+class Fetcher(webapp.RequestHandler):
+
+  def get(self):
+    next_url = atom.url.Url('http', settings.HOST_NAME, path='/step1')
+
+client = gdata.service.GDataService()
+# Tell the client that we are running in single user mode, and it should not
+# automatically try to associate the token with the current user then store
+# it in the datastore.
+gdata.alt.appengine.run_on_appengine(client, store_tokens=False, 
+    single_user_mode=True)
+client.email = 'jay@jhltechservices.com'
+client.password = 'rhel4fc3'
+# To request a ClientLogin token you must specify the desired service using
+# its service name.
+client.service = 'apps'
+# Request a ClientLogin token, which will be placed in the client's 
+# current_token member.
+client.ProgrammaticLogin()
+
+client.CreateUser('testuser', 'Test', 'User', 'testpass123', suspended='false', quota_limit=DEFAULT_QUOTA_LIMIT, password_hash_function=None)
+
+def main():
+  application = webapp.WSGIApplication([('/.*', Fetcher),], debug=True)
+  wsgiref.handlers.CGIHandler().run(application)
+
+if __name__ == '__main__':
+  main()
