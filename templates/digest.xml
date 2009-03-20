@@ -1,4 +1,0 @@
-{% include "response-samlp-Response-Open.xml" %}
-
-
-{% include "response-samlp-Response-Remainder.xml" %}
