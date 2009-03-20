@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+{% include "response-samlp-Response-Open.xml" %}
+{% include "response-signature.xml" %}
+{% include "response-samlp-Response-Remainder.xml" %}
