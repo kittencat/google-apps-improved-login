@@ -126,7 +126,7 @@ CLIENT_LOGIN_SCOPES = {
         'http://apps-apis.google.com/a/feeds/',
         'https://apps-apis.google.com/a/feeds/'],
     'weaver': [ # Health H9 Sandbox
-        'https://www.google.com/h9/'],
+        'https://www.google.com/h9/feeds/'],
     'wise': [ # Spreadsheets Data API
         'https://spreadsheets.google.com/feeds/',
         'http://spreadsheets.google.com/feeds/'],
@@ -492,7 +492,7 @@ class GDataService(atom.service.AtomService):
   def UpgradeToOAuthAccessToken(self, authorized_request_token=None,
                                 request_url='%s/accounts/OAuthGetAccessToken' \
                                 % AUTH_SERVER_HOST, oauth_version='1.0'):
-    """Upgrades the authorized request token to an access token.
+    """Upgrades the authorized request token to an access token and returns it
     
     Args:
       authorized_request_token: gdata.auth.OAuthToken (optional) OAuth request
@@ -504,6 +504,9 @@ class GDataService(atom.service.AtomService):
           added by default but here you can override it's value.
       request_url: Access token URL. The default is
           'https://www.google.com/accounts/OAuthGetAccessToken'.
+    
+    Returns:
+      Access token
           
     Raises:
       NonOAuthToken if the user's authorized request token is not an OAuth
@@ -536,6 +539,7 @@ class GDataService(atom.service.AtomService):
       token.scopes = authorized_request_token.scopes
       token.oauth_input_params = authorized_request_token.oauth_input_params
       self.SetOAuthToken(token)
+      return token
     else:
       raise TokenUpgradeFailed({'status': response.status,
                                 'reason': 'Non 200 response on upgrade',
@@ -1395,7 +1399,7 @@ def ExtractToken(url, scopes_included_in_next=True):
 
 
 def GenerateAuthSubRequestUrl(next, scopes, hd='default', secure=False,
-    session=True, request_url='http://www.google.com/accounts/AuthSubRequest',
+    session=True, request_url='https://www.google.com/accounts/AuthSubRequest',
     include_scopes_in_next=True):
   """Creates a URL to request an AuthSub token to access Google services.
 
@@ -1420,7 +1424,7 @@ def GenerateAuthSubRequestUrl(next, scopes, hd='default', secure=False,
         token may only be used once and cannot be upgraded. Default is True.
     request_url: The base of the URL to which the user will be sent to
         authorize this application to access their data. The default is
-        'http://www.google.com/accounts/AuthSubRequest'.
+        'https://www.google.com/accounts/AuthSubRequest'.
     include_scopes_in_next: Boolean if set to true, the 'next' parameter will
         be modified to include the requested scope as a URL parameter. The
         key for the next's scope parameter will be SCOPE_URL_PARAM_NAME. The

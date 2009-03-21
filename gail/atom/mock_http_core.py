@@ -39,15 +39,11 @@ class MockHttpClient(object):
 
   def add_response(self, http_request, status, reason, headers=None, 
       body=None):
-    if body is not None:
-      if hasattr(body, 'read'):
-        copied_body = body.read()
-      else:
-        copied_body = body
-    response = atom.http_core.HttpResponse(status, reason, headers, 
-                                           copied_body)
+    response = MockHttpResponse(status, reason, headers, body)
     # TODO Scrub the request and the response.
     self._recordings.append((http_request._copy(), response))
+
+  AddResponse = add_response
   
   def request(self, http_request):
     """Provide a recorded response, or record a response for replay.
@@ -71,6 +67,8 @@ class MockHttpClient(object):
       # Return the recording which we just added.
       return self._recordings[-1][1]
     return None
+
+  Request = request
     
   def _save_recordings(self, filename):
     recording_file = open(os.path.join(tempfile.gettempdir(), filename), 
@@ -82,22 +80,101 @@ class MockHttpClient(object):
                           'rb')
     self._recordings = pickle.load(recording_file)
 
+  def _delete_recordings(self, filename):
+    full_path = os.path.join(tempfile.gettempdir(), filename)
+    if os.path.exists(full_path):
+      os.remove(full_path)
+
   def _load_or_use_client(self, filename, http_client):
     if os.path.exists(os.path.join(tempfile.gettempdir(), filename)):
       self._load_recordings(filename)
     else:
       self.real_client = http_client
 
+  def use_cached_session(self, name, real_http_client=None):
+    """Attempts to load recordings from a previous live request.
+    
+    If a temp file with the recordings exists, then it is used to fulfill
+    requests. If the file does not exist, then a real client is used to 
+    actually make the desired HTTP requests. Requests and responses are
+    recorded and will be written to the desired temprary cache file when
+    close_session is called.
+
+    Args:
+      name: str The name of the temporary file which should hold the cached
+            HTTP requests and responses.
+      real_http_client: atom.http_core.HttpClient the real client to be used
+                        if the cached recordings are not found. If the default
+                        value is used, this will be an 
+                        atom.http_core.HttpClient.
+    """
+    if real_http_client is None:
+      real_http_client = atom.http_core.HttpClient()
+    self._recordings_cache_name = name
+    self._load_or_use_client(name, real_http_client)
+
+  def close_session(self):
+    """Saves recordings in the temporary file named in use_cached_session."""
+    if self.real_client is not None:
+      self._save_recordings(self._recordings_cache_name)
+
+  def delete_session(self, name=None):
+    """Removes recordings from a previous live request."""
+    if name is None:
+      self._delete_recordings(self._recordings_cache_name)
+    else:
+      self._delete_recordings(name)
+
+
 def _match_request(http_request, stored_request):
   """Determines whether a request is similar enough to a stored request 
      to cause the stored response to be returned."""
+  # Check to see if the host names match.
+  if (http_request.uri.host is not None 
+      and http_request.uri.host != stored_request.uri.host):
+    return False
+  # Check the request path in the URL (/feeds/private/full/x)
+  elif http_request.uri.path != stored_request.uri.path:
+    return False
+  # Check the method used in the request (GET, POST, etc.)
+  elif http_request.method != stored_request.method:
+    return False
+  # If there is a gsession ID in either request, make sure that it is matched
+  # exactly.
+  elif ('gsessionid' in http_request.uri.query 
+        or 'gsessionid' in stored_request.uri.query):
+    if 'gsessionid' not in stored_request.uri.query:
+      return False
+    elif 'gsessionid' not in http_request.uri.query:
+      return False
+    elif (http_request.uri.query['gsessionid'] 
+          != stored_request.uri.query['gsessionid']):
+      return False
+  # Ignores differences in the query params (?start-index=5&max-results=20),
+  # the body of the request, the port number, HTTP headers, just to name a 
+  # few.
   return True
 
+
 def _scrub_request(http_request):
-  pass
+  """ Removes email address and password from a client login request.
+  
+  Since the mock server saves the request and response in plantext, sensitive
+  information like the password should be removed before saving the 
+  recordings. At the moment only requests sent to a ClientLogin url are
+  scrubbed.
+  """
+  if (http_request and http_request.uri and http_request.uri.path and 
+      http_request.uri.path.endswith('ClientLogin')):
+    # Remove the email and password from a ClientLogin request.
+    http_request._body_parts = []
+    http_request.add_form_inputs(
+        {'form_data': 'client login request has been scrubbed'})
+  return http_request
+
 
 def _scrub_response(http_response):
-  pass
+  return http_response
 
     
 class EchoHttpClient(object):
@@ -116,21 +193,23 @@ class EchoHttpClient(object):
   """
   
   def request(self, http_request):
-    return self._http_request(http_request.host, http_request.method, 
-        http_request.uri, http_request.scheme, http_request.port, 
-        http_request.headers, http_request._body_parts)
+    return self._http_request(http_request.uri, http_request.method, 
+                              http_request.headers, http_request._body_parts)
 
-  def _http_request(self, host, method, uri, scheme=None,  port=None, 
-      headers=None, body_parts=None):
+  def _http_request(self, uri, method, headers=None, body_parts=None):
     body = StringIO.StringIO()
     response = atom.http_core.HttpResponse(status=200, reason='OK', body=body)
     if headers is None:
       response._headers = {}
     else:
-      response._headers = headers.copy()
-    response._headers['Echo-Host'] = '%s:%s' % (host, str(port))
-    response._headers['Echo-Uri'] = uri
-    response._headers['Echo-Scheme'] = scheme
+      # Copy headers from the request to the response but convert values to
+      # strings. Server response headers always come in as strings, so an int
+      # should be converted to a corresponding string when echoing.
+      for header, value in headers.iteritems():
+        response._headers[header] = str(value)
+    response._headers['Echo-Host'] = '%s:%s' % (uri.host, str(uri.port))
+    response._headers['Echo-Uri'] = uri._get_relative_path()
+    response._headers['Echo-Scheme'] = uri.scheme
     response._headers['Echo-Method'] = method
     for part in body_parts:
       if isinstance(part, str):
@@ -139,3 +218,47 @@ class EchoHttpClient(object):
         body.write(part.read())
     body.seek(0)
     return response
+
+
+class SettableHttpClient(object):
+  """An HTTP Client which responds with the data given in set_response."""
+
+  def __init__(self, status, reason, body, headers):
+    self.set_response(status, reason, body, headers)
+
+  def set_response(self, status, reason, body, headers):
+    """Determines the response which will be sent for each request.
+
+    Args:
+      status: An int for the HTTP status code, example: 200, 404, etc.
+      reason: String for the HTTP reason, example: OK, NOT FOUND, etc.
+      body: The body of the HTTP response as a string or a file-like 
+            object (something with a read method). 
+      headers: dict of strings containing the HTTP headers in the response.
+    """
+    self.response = atom.http_core.HttpResponse(status=status, reason=reason,
+        body=body)
+    self.response._headers = headers.copy()
+
+  def request(self, http_request):
+    return self.response
+
+
+class MockHttpResponse(atom.http_core.HttpResponse):
+
+  def __init__(self, status=None, reason=None, headers=None, body=None):
+    self._headers = headers or {}
+    if status is not None:
+      self.status = status
+    if reason is not None:
+      self.reason = reason
+    if body is not None:
+      # Instead of using a file-like object for the body, store as a string
+      # so that reads can be repeated.
+      if hasattr(body, 'read'):
+        self._body = body.read()
+      else:
+        self._body = body
+
+  def read(self):
+    return self._body
