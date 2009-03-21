@@ -44,13 +44,13 @@ class DoLogin(webapp.RequestHandler):
     templatepath = os.path.join(os.path.dirname(__file__), 'templates')
     becomeattempt = False
     loginvalue = str(self.request.get('username'))
-    if settings.ADMINS_BECOME_USER and loginvalue.find('+') != -1:
+    if (settings.ADMINS_BECOME_USER or settings.USERS_BECOME_USERS) and loginvalue.find('+') != -1:
       username = loginvalue[0:(loginvalue.find('+'))]
       loginuser = loginvalue[(loginvalue.find('+') + 1):]
       becomeattempt = True
     else:
       username = loginvalue
-    password = self.request.get('password')
+    password = str(self.request.get('password'))
     domain = settings.GAPPS_DOMAIN
     apps = gdata.apps.service.AppsService(email=username+'@'+domain, domain=domain, password=password)
     gdata.alt.appengine.run_on_appengine(apps, store_tokens=True, single_user_mode=True)
@@ -63,11 +63,18 @@ class DoLogin(webapp.RequestHandler):
       try:
         LookupUser = apps.RetrieveUser(username)
       except gdata.apps.service.AppsForYourDomainException , e:
-        self.redirect('/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=You%20Are%20Not%20An%20Admin.')
+        if ! settings.USERS_BECOME_USERS:
+  	      self.redirect('/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=You%20Are%20Not%20An%20Admin.')
       if LookupUser.login.admin == 'true':
         username = loginuser
       else:
-        self.redirect('/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=You%20Are%20Not%20An%20Admin.')
+        if ! settings.USERS_BECOME_USERS:
+	      self.redirect('/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=You%20Are%20Not%20An%20Admin.')
+        else:
+		  if userCanBecomeUser(username, loginuser):
+		    username = loginuser
+	      else:
+		    self.redirect('/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=You%20Are%20Not%20An%20Admin.')
     SAMLRequest = self.request.get('SAMLRequest')
     if self.request.get('SAMLRequest') == '':
       self.redirect('https://mail.google.com/a/' + domain)
@@ -119,7 +126,7 @@ class DoLogin(webapp.RequestHandler):
     autopost_values = {
       'acsurl': xmldoc.firstChild.attributes['AssertionConsumerServiceURL'].value,
       'signedresponse': base64.b64encode(signedresponse),
-      'relaystate': self.request.get('RelayState')
+      'relaystate': self.request.get('RelayState') # template takes care of escaping for IE
       }
     self.response.out.write(template.render(autopostpath, autopost_values))
     #self.response.out.write("<html><body>\n\nResponse:\n\n"+response+"\n\nDigest:\n\n"+digest+"\n\nDigestPart:\n\n"+digestPart+"\n\nSigned Response:\n\n"+signedresponse+"\n\n</body></html>")
