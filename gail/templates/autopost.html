@@ -6,7 +6,7 @@
   <font size="+1">One moment while we log you in to your mail...</font>
   <form name="acsForm" action="{{ acsurl }}" method="post">
     <input type="hidden" name="SAMLResponse" value="{{ signedresponse }}" />
-    <input type="hidden" name="RelayState" value="{{ relaystate }}" />
+    <input type="hidden" name="RelayState" value="{{ relaystate|escape }}" />
     <input type="submit" value="Login" />
   </form>
 </BODY>
