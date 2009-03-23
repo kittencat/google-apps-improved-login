@@ -20,7 +20,7 @@ def getSAMLRequestAge (samlRequest):
   now = time.mktime(time.gmtime())
   return now - requestdate
 
-def userCanBecomeUser (apps, username, loginname)
+def userCanBecomeUser (apps, username, loginname):
   # Takes a apps resource, username and loginname.  Checks to see if username has rights
   # to login as loginname using ADMINS_BECOME_USER or USERS_BECOME_USERS.  Returns True/False.
   
