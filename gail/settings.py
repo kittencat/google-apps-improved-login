@@ -46,4 +46,4 @@ ADMIN_USER = ''
 # to set ADMIN_PASS
 
 #ADMIN_PASS = 'p@ssw0rd'
-ADMIN_USER = ''
+ADMIN_PASS = ''

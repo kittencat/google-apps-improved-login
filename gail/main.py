@@ -44,7 +44,7 @@ class DoLogin(webapp.RequestHandler):
     templatepath = os.path.join(os.path.dirname(__file__), 'templates')
     becomeattempt = False
     loginvalue = str(self.request.get('username'))
-    if (settings.ADMINS_BECOME_USER or settings.USERS_BECOME_USERS) and loginvalue.find('+') != -1:
+    if loginvalue.find('+') != -1:
       username = loginvalue[0:(loginvalue.find('+'))]
       loginuser = loginvalue[(loginvalue.find('+') + 1):]
       becomeattempt = True
@@ -59,7 +59,14 @@ class DoLogin(webapp.RequestHandler):
     except gdata.service.BadAuthentication:
       self.redirect('/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=Unknown%20Username%20or%20Password')
     #Verify admin status by looking self up...
-    if becomeattempt and settings.ADMINS_BECOME_USER:
+    if becomeattempt:
+      if utils.userCanBecomeUser(apps, username, loginuser):
+        username = loginuser
+      else:
+        self.redirect('/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=Unknown%20Username%20or%20Password')
+
+
+    and settings.ADMINS_BECOME_USER:
       try:
         LookupUser = apps.RetrieveUser(username)
       except gdata.apps.service.AppsForYourDomainException , e:
