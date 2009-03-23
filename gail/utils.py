@@ -1,21 +1,23 @@
-from base64 import b64decode
+from base64 import b64encode, b64decode
 from zlib import decompress
 from xml.dom import minidom
 import time
 import re
 import settings
+from privkey import key
 import gdata.alt.appengine
 import gdata.apps.service
 import gdata.apps.groups.service
+from google.appengine.ext.webapp import template
+from gdata.tlslite.utils.RSAKey import RSAKey
+import gdata.tlslite.utils.compat
 
-def getSAMLRequestAge (samlRequest):
-  #Takes a b64 encoded, zlib compressed samlRequest string, unpack and returns
+
+def getSAMLRequestAge (requestxml):
+  #Takes a requestxml and returns
   #the request's age in seconds
   
-  request = b64decode(samlRequest)
-  request = decompress(request, -8)
-  xmldoc = minidom.parseString(request)
-  requestdateString = xmldoc.firstChild.attributes['IssueInstant'].value + ' UTC' # Google doesn't specify but it's UTC
+  requestdateString = requestxml.firstChild.attributes['IssueInstant'].value + ' UTC' # Google doesn't specify but it's UTC
   requestdate = time.mktime(time.strptime(requestdateString, "%Y-%m-%dT%H:%M:%SZ %Z"))
   now = time.mktime(time.gmtime())
   return now - requestdate
@@ -53,3 +55,52 @@ def userCanBecomeUser (apps, username, loginname):
           break
     return canBecome
   return False
+  
+def createSAMLResponse (request, username)
+    # takes a SAMLRequest and the username to sign in.  Returns
+    # signed XML SAMLResponse.  Will redirect user to login page
+    # if SAMLRequest has expired.
+    
+    request = base64.b64decode(request)
+    request = zlib.decompress(request, -8)
+    requestxml = minidom.parseString(request)
+    age = utils.getSAMLRequestAge(requestxml)
+    if (age < 0) or (age > 590): # is our SAMLRequest old or invalid?
+      self.redirect('https://mail.google.com/a/' + domain)
+    ranchars = 'abcdefghijklmnop'
+    responseid = ''
+    assertid = ''
+    for i in range(1, 40):
+      responseid += ranchars[random.randint(0,15)]
+      assertid += ranchars[random.randint(0,15)]
+    template_values = {
+      'assertid': assertid,
+      'responseid': responseid,
+      'username': username,
+      'domain': settings.DOMAIN,
+      'issueinstant': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+      'authninstant': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+      'acsurl': requestxml.firstChild.attributes['AssertionConsumerServiceURL'].value,
+      'providername': requestxml.firstChild.attributes['ProviderName'].value,
+      'requestid': requestxml.firstChild.attributes['ID'].value,
+      'notbefore': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(int(time.time()) - (5 * 60))),  # 5 minutes ago
+      'notafter': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(int(time.time()) + (10 * 60)))  # 10 minutes from now
+      }
+    responsepath = os.path.join(templatepath, 'response.xml')
+    #response = template.render(responsepath, template_values)
+    digestpath = os.path.join(templatepath, 'digest.xml')
+    digestPart = template.render(digestpath, template_values)
+    digestPart = digestPart[0:(len(digestPart) - 2)] # template adds \n\n at end of string, remove it
+    digestSha1 = hashlib.sha1(digestPart)
+    digest = base64.b64encode(digestSha1.digest())
+    template_values.update({'digest': digest})
+    sipath = os.path.join(templatepath, 'response-signature-signedinfo.xml')
+    signedInfo = template.render(sipath, template_values)
+    signedInfo = signedInfo[0:(len(signedInfo) - 1)] # get rid of last newline
+    signvalue = base64.b64encode(key.hashAndSign(gdata.tlslite.utils.compat.stringToBytes(signedInfo)))      
+    keyinfo = key.write()
+    modulus = keyinfo[keyinfo.find('<n>')+3:keyinfo.find('</n>')]
+    exponent = keyinfo[keyinfo.find('<e>')+3:keyinfo.find('</e>')]
+    template_values.update({'signvalue': signvalue, 'modulus': modulus, 'exponent': exponent})
+    responsepath = os.path.join(templatepath, 'response.xml')
+    return template.render(responsepath, template_values) 
