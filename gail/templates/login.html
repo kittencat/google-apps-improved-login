@@ -28,14 +28,12 @@
 	  </tr>
 	  <tr>
 	    <td width="55%" valign="top"><p>Welcome to {{ domain }}.</p>
-          <p><strong><Your message to users here></strong></p>
-          <blockquote>
-          <p>You can customize this text or this entire page by editing the file gail/templates/login.html</p>
-        </td>
-        <td width="45%" valign="top">
-		  <div align="center">
-            <p><strong>{{ domain }} Login</strong></p>
-          </div>
+        <p>You can customize this text or this entire page by editing the file gail/templates/login.html</p>
+      </td>
+      <td width="45%" valign="top">
+		    <div align="center">
+          <p><strong>{{ domain }} Login</strong></p>
+        </div>
         <form name="authform" action="/dologin" method="post">
         <table width="100%" border="0" cellspacing="5">
           <tr>
@@ -49,19 +47,18 @@
 			  <input name="Login" tabindex="3" type="submit" value="Login">
               <input type="hidden" name="SAMLRequest" value="{{ samlrequest }}"/>
               <input type="hidden" name="RelayState" value="{{ relaystate }}"/>
+              </form>
             </td>
-          </tr>
-          <tr>
-            <td>
-              <p><font color="red">{{ error }}</font></p>
-            </td>
-          </tr>
-			  </td>
           </tr>
         </table>
-        </form>
-	  </td>
-	</tr>
-  </table>
+      </td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>
+          <p><font color="red">{{ error }}</font></p>
+        </td>
+      </tr>
+    </table>
   </body>
 </html>
