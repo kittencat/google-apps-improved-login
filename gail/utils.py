@@ -28,8 +28,7 @@ def userCanBecomeUser (apps, username, loginname):
     try:
       LookupUser = apps.RetrieveUser(username)
     except gdata.apps.service.AppsForYourDomainException , e:
-      if ! settings.USERS_BECOME_USERS:
-  	    self.redirect('/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=You%20Are%20Not%20An%20Admin.')
+      pass
     if LookupUser.login.admin == 'true':
       return True
   if settings.USERS_BECOME_USERS:
