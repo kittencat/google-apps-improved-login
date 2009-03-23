@@ -4,6 +4,7 @@ from xml.dom import minidom
 import time
 import re
 import os
+import random
 import settings
 from privkey import key
 import gdata.alt.appengine
