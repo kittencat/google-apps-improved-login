@@ -70,6 +70,7 @@ def createAutoPostResponse (self, request, username):
     # signed XML SAMLResponse.  Will redirect user to login page
     # if SAMLRequest has expired.
     
+    domain = settings.GAPPS_DOMAIN
     templatepath = os.path.join(os.path.dirname(__file__), 'templates')
     requestdata = unpackSAMLRequest(request)
     age = requestdata['requestage']
@@ -85,7 +86,7 @@ def createAutoPostResponse (self, request, username):
       'assertid': assertid,
       'responseid': responseid,
       'username': username,
-      'domain': settings.DOMAIN,
+      'domain': settings.GAPPS_DOMAIN,
       'issueinstant': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
       'authninstant': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
       'acsurl': requestdata['acsurl'],
