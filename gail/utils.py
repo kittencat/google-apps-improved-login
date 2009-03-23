@@ -65,7 +65,7 @@ def userCanBecomeUser (apps, username, loginname):
     return canBecome
   return False
   
-def createAutoPostResponse (request, username):
+def createAutoPostResponse (self, request, username):
     # takes a SAMLRequest and the username to sign in.  Returns
     # signed XML SAMLResponse.  Will redirect user to login page
     # if SAMLRequest has expired.
