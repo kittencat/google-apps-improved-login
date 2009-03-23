@@ -18,53 +18,7 @@ you'll need to download the Win32 OpenSSL Light file as well as the Visual C++ 2
   openssl genrsa -out privkey.pem 2048
   openssl rsa -in privkey.pem -pubout -outform DER -out pubkey.der
   
-this will leave you with two files, privkey.pem and pubkey.der.  pubkey.der is the public key that we will upload to Google's servers in a later step but first, we'll configure GAIL to use our privkey.pem private key.  Make sure you take note of the path where your privkey.pem and pubkey.der files are stored (C:\OpenSSL\bin by default).
-
-6.  In a plain text editor like Windows Notepad or Notepad++ (http://notepad-plus.sourceforge.net), open up privkey.pem.  Highlight the ENTIRE file and Copy it to the clipboard (Edit, Copy).  Now close privkey.pem and open privkey.py which is in your GAIL folder.  Paste the contents of privkey.pem into privkey.py as shown below:
-
--- empty privkey.py start --
-import gdata.tlslite.utils.keyfactory
-
-key = gdata.tlslite.utils.keyfactory.parsePEMKey("""  <---- Paste privkey.pem here!!
-""", private=True)
--- empty privkey.py end --
-
-your privkey.py should now look something like:
-
--- example completed privkey.pem start --
-import gdata.tlslite.utils.keyfactory
-
-key = gdata.tlslite.utils.keyfactory.parsePEMKey("""-----BEGIN RSA PRIVATE KEY-----
-MIIEpAIBAAKCAQEA2WO3x3BSIxsvyrBHbLZJT5d2CaGqtF0O84HSTrBzgAq/VDps
-Li57E9kztbPOHkFV09nKb3M8iR/V50PWelMqcAPySbZBb5NrgqVp89LOrYpTRmrS
-BG+mxAe8Jd0xKmXkVWiSkYvzM+mSA3E58sJBhCYsoAUSIWV0v25PfORSATPiZQJ7
-2SpnYJWkhtsfdivzLnP5IuzVXGU1rI6uye+oWJSK2eNRP6PsYHikyN84DFBC3UGB
-cx336hmoQQd4n797TTDNFiuSFhf3cJzBD7rU6tGOnX7ebLZMPkXtv4aPgSrFBpRk
-agGABqXIL7FzKnv1bOKi9NerWJF0GokMvyKaHQIDAQABAoIBAENzxH92o5XPBro+
-jjr2KLMwjOiaKCyEv3HhM09FQuFU9F7/Lbf6pifXeksD+o26uhXc+wov2HW30hhL
-HU6hZYaSQuiKS62CMZa9Gq4UGBsS05oC5R2JQ1aKC+A3zNyZ9wplQy00HodaDvtQ
-c6mWitulOK2CRUjlgR8w7CsVcTh7vR/yn3sUBGWag/GpOGeAGHBn01uHXgFQZOWa
-+Vs9T42FkyfZRB0pJx8bs8eaTj4HlG+yU5rFHui5kWlYmsarhwp39zdDCLoQG31P
-PajWdvg/95tBLMtwcK3Rwu+idvtgIvXnCckIvAVzIaiT5nKnUI5MmRSJMArJoeA2
-+bMP5GUCgYEA/OstGX9JECOIAnpW8HDeseN1tmicKOHbfQW6y7ZR6Ioj6GCn0PLA
-cZBKdMOTxhiUie/VOWVyVnIMaN8if1oBnfNyi0qTPKXZYDipLTbSem0EuzlJisdS
-yurHR80CbYoeNGbqo8Hb1Ha8RjYdnEo01f/rqAbPbpYk4jWWz5mP3CcCgYEA3Am7
-ASqwnWcKA1XiPHtk5fCczG+TsQo5rUvY/6nyfUMqMJ/tFX0gdTuhgWSbH6pQ0nra
-LkhASYkqvgFFy5IHKYcGtiDryYjB84rA61QD42oWGKdv4NAWi9woI4gR6pMqWLo5
-5u1HteIHdLWqKNl7kQJ4qy0MzMeKFUOK+KYZzhsCgYEApYwGFCdlmoO3Ve/gEje+
-/G8nMINem7/iW/4xG4A2MuCgykzh63nJj0vkAHO3uTWDnJn4Vj5Zzc2O4+ISAYvX
-fRzJf/ULVOo1066ixa6ZrHrJWwcPZSA8yAdO82d0TGDYjnJC6XdNvc8OQ2LOlOtZ
-lC2UgYIbqoXqlIqBMVeRe4cCgYEA1zrpYe3JDl4grDyQ7Epi2oxuQ4aMd+shmcKM
-QyCQYjiVhzSX6qIXYrTueKvZFLM7FXc3/XeM8qEqXurNw59WRCegx/wRx3NvC/NY
-W5g1qXg2nu0BAW1p8GpsFL1fkQ1cqaeXRawprd6nHmEoTYbWWHSLZhzN3Wz9Q2lr
-AWcv7KsCgYAYgnWydyDANJpeWD1M6OPBvkb3IH5A1j1hdEqfrL9TvCHR7Day7Yna
-FCo9mQ1KPIlFJB+vg7nOlXLKeN+YGixZlCdh7yh5+uma7YsA38s9EToUhvNotSPh
-MJKMIB9GDKunp+zvU9O9/Yim+9tqi3jM2uskWYj6WaS37XVGQS6GvA==
------END RSA PRIVATE KEY-----
-""", private=True)
--- example completed privkey.pem end --
-
-save your changes to privkey.py and close the file.
+this will leave you with two files, privkey.pem and pubkey.der.  Make sure you take note of the path where your privkey.pem and pubkey.der files are stored (C:\OpenSSL\bin by default).  pubkey.der is the public key that we will upload to Google's servers in a later step but first.  privkey.pem is our private key that GAIL will use.  Copy privkey.pem to your GAIL folder (e.g. c:\appengine\gail).
 
 7. Open the settings.py file in your GAIL directory.  Currently the only two settings are GAPPS_DOMAIN and ADMINS_BECOME_USERS.  Change GAPPS_DOMAIN to match your Google Apps Domain name (everything after the @ in your email address).  By default, Admins are allowed to log in as any user.  If you want to turn this feature off, change the True to be False.  Pay close to attention to changes made to settings.py, if you misplace or remove the quote marks, or don't capitilize the first letter of True or False, you'll break GAIL.  Note that lines starting with # are comments and are ignored.  Save your changes to settings.py
 
