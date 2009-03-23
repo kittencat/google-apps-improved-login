@@ -43,7 +43,7 @@ def userCanBecomeUser (apps, username, loginname):
     lists = groupsadmin.RetrieveGroups(username)
     canBecome = False
     for group in lists:
-      if re.match('.*-become@'+domain, group['groupId'].lower():
+      if re.match('.*-become@'+domain, group['groupId'].lower()):
         #see if loginname matches this group name (minus the -become)
         #or if loginname is a member of this group (minus the -become)
         if group['groupId'].lower() == loginname.lower()+'-become@'+domain:
