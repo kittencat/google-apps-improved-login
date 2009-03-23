@@ -6,6 +6,7 @@ import gdata.apps.service
 import urllib
 import settings
 import utils
+from google.appengine.ext.webapp import template
 
 class ShowLogin(webapp.RequestHandler):
   def get(self):
