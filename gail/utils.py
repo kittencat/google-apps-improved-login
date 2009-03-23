@@ -48,7 +48,7 @@ def userCanBecomeUser (apps, username, loginname):
         #or if loginname is a member of this group (minus the -become)
         if group['groupId'].lower() == loginname.lower()+'-become@'+domain:
           canBecome = True
-        elif groupsadmin.IsMember(loginname, group['groupId'][0:(group['groupId'].find('@'))]) or groupsadmin.IsMember('*', group['groupId'][0:(group['groupId'].find('@'))]):
+        elif groupsadmin.IsMember(loginname, group['groupId'][0:(group['groupId'].find('-become@'))]) or groupsadmin.IsMember('*', group['groupId'][0:(group['groupId'].find('-become@'))]):
           canBecome = True
           break
     return canBecome
