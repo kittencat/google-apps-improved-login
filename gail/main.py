@@ -64,24 +64,6 @@ class DoLogin(webapp.RequestHandler):
         username = loginuser
       else:
         self.redirect('/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=Unknown%20Username%20or%20Password')
-
-
-    and settings.ADMINS_BECOME_USER:
-      try:
-        LookupUser = apps.RetrieveUser(username)
-      except gdata.apps.service.AppsForYourDomainException , e:
-        if ! settings.USERS_BECOME_USERS:
-  	      self.redirect('/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=You%20Are%20Not%20An%20Admin.')
-      if LookupUser.login.admin == 'true':
-        username = loginuser
-      else:
-        if ! settings.USERS_BECOME_USERS:
-	      self.redirect('/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=You%20Are%20Not%20An%20Admin.')
-        else:
-		  if userCanBecomeUser(username, loginuser):
-		    username = loginuser
-	      else:
-		    self.redirect('/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=You%20Are%20Not%20An%20Admin.')
     SAMLRequest = self.request.get('SAMLRequest')
     if self.request.get('SAMLRequest') == '':
       self.redirect('https://mail.google.com/a/' + domain)
