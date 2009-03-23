@@ -2,13 +2,6 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 import gdata.alt.appengine
 import os
-import random
-import base64
-import hashlib
-import zlib
-import time
-import binascii
-from xml.dom import minidom
 import gdata.apps.service
 import urllib
 import settings
@@ -20,8 +13,8 @@ class ShowLogin(webapp.RequestHandler):
     if self.request.get('SAMLRequest') == '':
       self.redirect('https://mail.google.com/a/' + domain)
       return
-    SAMLRequest = self.request.get('SAMLRequest')
-    age = utils.getSAMLRequestAge(SAMLRequest)
+    requestdata = utils.unpackSAMLRequest(self.request.get('SAMLRequest'))
+    age = requestdata['requestage']
     if (age < 0) or (age > 590): # is our SAMLRequest old or invalid?
       self.redirect('https://mail.google.com/a/' + domain)
     template_values = {
@@ -60,14 +53,7 @@ class DoLogin(webapp.RequestHandler):
         username = loginuser
       else:
         self.redirect('/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=Unknown%20Username%20or%20Password')
-    autopostpath = os.path.join(templatepath, 'autopost.html')
-    autopost_values = {
-      'acsurl': xmldoc.firstChild.attributes['AssertionConsumerServiceURL'].value,
-      'signedresponse': base64.b64encode(signedresponse),
-      'relaystate': self.request.get('RelayState') # template takes care of escaping for IE
-      }
-    self.response.out.write(template.render(autopostpath, autopost_values))
-    #self.response.out.write("<html><body>\n\nResponse:\n\n"+response+"\n\nDigest:\n\n"+digest+"\n\nDigestPart:\n\n"+digestPart+"\n\nSigned Response:\n\n"+signedresponse+"\n\n</body></html>")
+    self.response.out.write(createAutoPostResponse(self.request.get('SAMLRequest', username)))
 
 application = webapp.WSGIApplication(
                                      [('/dologin', DoLogin),

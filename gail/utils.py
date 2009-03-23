@@ -13,15 +13,23 @@ from gdata.tlslite.utils.RSAKey import RSAKey
 import gdata.tlslite.utils.compat
 
 
-def getSAMLRequestAge (requestxml):
-  #Takes a requestxml and returns
-  #the request's age in seconds
-  
+def unpackSAMLRequest (SAMLRequest):
+  #Takes a base64 and zlib compresed SAMLRequest and returns
+  #a dict of attributes
+
+  now = time.mktime(time.gmtime())
+  SAMLRequest = base64.b64decode(SAMLRequest)
+  SAMLRequest = zlib.decompress(SAMLRequest, -8)
+  requestxml = minidom.parseString(SAMLRequest)
   requestdateString = requestxml.firstChild.attributes['IssueInstant'].value + ' UTC' # Google doesn't specify but it's UTC
   requestdate = time.mktime(time.strptime(requestdateString, "%Y-%m-%dT%H:%M:%SZ %Z"))
-  now = time.mktime(time.gmtime())
-  return now - requestdate
-
+  return {
+         'requestage': now - requestdate,
+         'acsurl': requestxml.firstChild.attributes['AssertionConsumerServiceURL'].value,
+         'providername': requestxml.firstChild.attributes['ProviderName'].value,
+         'requestid': requestxml.firstChild.attributes['ID'].value
+         }
+          
 def userCanBecomeUser (apps, username, loginname):
   # Takes a apps resource, username and loginname.  Checks to see if username has rights
   # to login as loginname using ADMINS_BECOME_USER or USERS_BECOME_USERS.  Returns True/False.
@@ -56,15 +64,14 @@ def userCanBecomeUser (apps, username, loginname):
     return canBecome
   return False
   
-def createSAMLResponse (request, username):
+def createAutoPostResponse (request, username):
     # takes a SAMLRequest and the username to sign in.  Returns
     # signed XML SAMLResponse.  Will redirect user to login page
     # if SAMLRequest has expired.
     
-    request = base64.b64decode(request)
-    request = zlib.decompress(request, -8)
-    requestxml = minidom.parseString(request)
-    age = utils.getSAMLRequestAge(requestxml)
+    templatepath = os.path.join(os.path.dirname(__file__), 'templates')
+    requestdata = unpackSAMLRequest(request)
+    age = requestdata['requestage']
     if (age < 0) or (age > 590): # is our SAMLRequest old or invalid?
       self.redirect('https://mail.google.com/a/' + domain)
     ranchars = 'abcdefghijklmnop'
@@ -80,9 +87,9 @@ def createSAMLResponse (request, username):
       'domain': settings.DOMAIN,
       'issueinstant': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
       'authninstant': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
-      'acsurl': requestxml.firstChild.attributes['AssertionConsumerServiceURL'].value,
-      'providername': requestxml.firstChild.attributes['ProviderName'].value,
-      'requestid': requestxml.firstChild.attributes['ID'].value,
+      'acsurl': requestdata['acsurl'],
+      'providername': requestdata['providername'],
+      'requestid': requestdata['requestid'],
       'notbefore': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(int(time.time()) - (5 * 60))),  # 5 minutes ago
       'notafter': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(int(time.time()) + (10 * 60)))  # 10 minutes from now
       }
@@ -103,4 +110,11 @@ def createSAMLResponse (request, username):
     exponent = keyinfo[keyinfo.find('<e>')+3:keyinfo.find('</e>')]
     template_values.update({'signvalue': signvalue, 'modulus': modulus, 'exponent': exponent})
     responsepath = os.path.join(templatepath, 'response.xml')
-    return template.render(responsepath, template_values) 
+    signedresponse = base64.b64encode(template.render(responsepath, template_values))
+    autopostpath = os.path.join(templatepath, 'autopost.html')
+    autopost_values = {
+      'acsurl': requestdata['acsurl'],
+      'signedresponse': signedresponse,
+      'relaystate': self.request.get('RelayState') # template takes care of escaping for IE
+      }
+    return template.render(autopostpath, autopost_values)
