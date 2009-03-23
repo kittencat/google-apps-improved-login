@@ -7,14 +7,14 @@ import os
 import random
 import hashlib
 import settings
-from privkey import key
+#from privkey import key
 import gdata.alt.appengine
 import gdata.apps.service
 import gdata.apps.groups.service
 from google.appengine.ext.webapp import template
 from gdata.tlslite.utils.RSAKey import RSAKey
 import gdata.tlslite.utils.compat
-
+import gdata.tlslite.utils.keyfactory
 
 def unpackSAMLRequest (SAMLRequest):
   #Takes a base64 and zlib compresed SAMLRequest and returns
@@ -108,6 +108,7 @@ def createAutoPostResponse (self, request, username):
     sipath = os.path.join(templatepath, 'response-signature-signedinfo.xml')
     signedInfo = template.render(sipath, template_values)
     signedInfo = signedInfo[0:(len(signedInfo) - 1)] # get rid of last newline
+    key = gdata.tlslite.utils.keyfactory.parsePEMKey(open('privkey.pem').read(), private=True)
     signvalue = b64encode(key.hashAndSign(gdata.tlslite.utils.compat.stringToBytes(signedInfo)))      
     keyinfo = key.write()
     modulus = keyinfo[keyinfo.find('<n>')+3:keyinfo.find('</n>')]
