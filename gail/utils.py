@@ -18,8 +18,8 @@ def unpackSAMLRequest (SAMLRequest):
   #a dict of attributes
 
   now = time.mktime(time.gmtime())
-  SAMLRequest = base64.b64decode(SAMLRequest)
-  SAMLRequest = zlib.decompress(SAMLRequest, -8)
+  SAMLRequest = b64decode(SAMLRequest)
+  SAMLRequest = decompress(SAMLRequest, -8)
   requestxml = minidom.parseString(SAMLRequest)
   requestdateString = requestxml.firstChild.attributes['IssueInstant'].value + ' UTC' # Google doesn't specify but it's UTC
   requestdate = time.mktime(time.strptime(requestdateString, "%Y-%m-%dT%H:%M:%SZ %Z"))
