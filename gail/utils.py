@@ -24,7 +24,7 @@ def userCanBecomeUser (apps, username, loginname):
   # Takes a apps resource, username and loginname.  Checks to see if username has rights
   # to login as loginname using ADMINS_BECOME_USER or USERS_BECOME_USERS.  Returns True/False.
   
-  if settings.ADMINS.BECOME_USER:
+  if settings.ADMINS_BECOME_USER:
     try:
       LookupUser = apps.RetrieveUser(username)
     except gdata.apps.service.AppsForYourDomainException , e:

@@ -23,6 +23,7 @@ class ShowLogin(webapp.RequestHandler):
     domain = settings.GAPPS_DOMAIN
     if self.request.get('SAMLRequest') == '':
       self.redirect('https://mail.google.com/a/' + domain)
+      return
     SAMLRequest = self.request.get('SAMLRequest')
     age = utils.getSAMLRequestAge(SAMLRequest)
     if (age < 0) or (age > 590): # is our SAMLRequest old or invalid?
