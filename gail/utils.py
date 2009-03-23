@@ -103,18 +103,18 @@ def createAutoPostResponse (self, request, username):
     digestPart = template.render(digestpath, template_values)
     digestPart = digestPart[0:(len(digestPart) - 2)] # template adds \n\n at end of string, remove it
     digestSha1 = hashlib.sha1(digestPart)
-    digest = base64.b64encode(digestSha1.digest())
+    digest = b64encode(digestSha1.digest())
     template_values.update({'digest': digest})
     sipath = os.path.join(templatepath, 'response-signature-signedinfo.xml')
     signedInfo = template.render(sipath, template_values)
     signedInfo = signedInfo[0:(len(signedInfo) - 1)] # get rid of last newline
-    signvalue = base64.b64encode(key.hashAndSign(gdata.tlslite.utils.compat.stringToBytes(signedInfo)))      
+    signvalue = b64encode(key.hashAndSign(gdata.tlslite.utils.compat.stringToBytes(signedInfo)))      
     keyinfo = key.write()
     modulus = keyinfo[keyinfo.find('<n>')+3:keyinfo.find('</n>')]
     exponent = keyinfo[keyinfo.find('<e>')+3:keyinfo.find('</e>')]
     template_values.update({'signvalue': signvalue, 'modulus': modulus, 'exponent': exponent})
     responsepath = os.path.join(templatepath, 'response.xml')
-    signedresponse = base64.b64encode(template.render(responsepath, template_values))
+    signedresponse = b64encode(template.render(responsepath, template_values))
     autopostpath = os.path.join(templatepath, 'autopost.html')
     autopost_values = {
       'acsurl': requestdata['acsurl'],
