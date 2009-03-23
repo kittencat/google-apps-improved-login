@@ -54,7 +54,7 @@ class DoLogin(webapp.RequestHandler):
         username = loginuser
       else:
         self.redirect('/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=Unknown%20Username%20or%20Password')
-    self.response.out.write(utils.createAutoPostResponse(self.request.get('SAMLRequest', username)))
+    self.response.out.write(utils.createAutoPostResponse(self, self.request.get('SAMLRequest', username)))
 
 application = webapp.WSGIApplication(
                                      [('/dologin', DoLogin),
