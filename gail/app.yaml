@@ -23,6 +23,10 @@ handlers:
   static_files: static/fadeback.jpg
   upload: static/fadeback.jpg
   secure: optional
+
+- url: /dologin
+  script: main.py
+  secure: always
   
 - url: .*
   script: main.py

@@ -24,7 +24,8 @@ class ShowLogin(webapp.RequestHandler):
       'samlrequest': self.request.get('SAMLRequest'),
       'relaystate': self.request.get('RelayState'),
       'error': self.request.get('Error'),
-      'domain': domain
+      'domain': domain,
+      'appspot_domain': os.environ['APPLICATION_ID']+'.appspot.com'
       }
     path = os.path.join(os.path.dirname(__file__), 'templates')
     path = os.path.join(path, 'login.html')
