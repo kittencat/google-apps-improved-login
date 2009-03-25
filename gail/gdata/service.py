@@ -776,7 +776,7 @@ class GDataService(atom.service.AtomService):
       else:
         self.__captcha_token = None
         self.__captcha_url = None
-        raise Error, 'Server responded with a 403 code'
+        raise Error, 'Server responded with a 403 code: ' + response_body.splitlines()[0]
     elif auth_response.status == 302:
       self.__captcha_token = None
       self.__captcha_url = None
