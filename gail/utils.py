@@ -21,7 +21,10 @@ def unpackSAMLRequest (SAMLRequest):
   #a dict of attributes
 
   now = time.mktime(time.gmtime())
-  SAMLRequest = b64decode(SAMLRequest)
+  try:
+    SAMLRequest = b64decode(SAMLRequest)
+  except TypeError:
+    self.redirect('https://mail.google.com/a/'+settings.GAPPS_DOMAIN)
   SAMLRequest = decompress(SAMLRequest, -8)
   requestxml = minidom.parseString(SAMLRequest)
   requestdateString = requestxml.firstChild.attributes['IssueInstant'].value + ' UTC' # Google doesn't specify but it's UTC
