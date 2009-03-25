@@ -25,7 +25,10 @@ def unpackSAMLRequest (SAMLRequest):
     SAMLRequest = b64decode(SAMLRequest)
   except TypeError:
     self.redirect('https://mail.google.com/a/'+settings.GAPPS_DOMAIN)
-  SAMLRequest = decompress(SAMLRequest, -8)
+  try:
+    SAMLRequest = decompress(SAMLRequest, -8)
+  except:
+    self.redirect('https://mail.google.com/a/'+settings.GAPPS_DOMAIN)
   requestxml = minidom.parseString(SAMLRequest)
   requestdateString = requestxml.firstChild.attributes['IssueInstant'].value + ' UTC' # Google doesn't specify but it's UTC
   requestdate = time.mktime(time.strptime(requestdateString, "%Y-%m-%dT%H:%M:%SZ %Z"))
