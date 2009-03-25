@@ -62,7 +62,7 @@ class DoLogin(webapp.RequestHandler):
 application = webapp.WSGIApplication(
                                      [('/dologin', DoLogin),
                                       ('/', ShowLogin)],
-                                     debug=True)
+                                     debug=False)
 
 def main():
   run_wsgi_app(application)
