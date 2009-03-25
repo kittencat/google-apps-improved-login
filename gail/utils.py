@@ -16,7 +16,7 @@ from gdata.tlslite.utils.RSAKey import RSAKey
 import gdata.tlslite.utils.compat
 import gdata.tlslite.utils.keyfactory
 
-def unpackSAMLRequest (SAMLRequest):
+def unpackSAMLRequest (self, SAMLRequest):
   #Takes a base64 and zlib compresed SAMLRequest and returns
   #a dict of attributes
 
@@ -80,7 +80,7 @@ def createAutoPostResponse (self, request, username):
     
     domain = settings.GAPPS_DOMAIN
     templatepath = os.path.join(os.path.dirname(__file__), 'templates')
-    requestdata = unpackSAMLRequest(request)
+    requestdata = unpackSAMLRequest(self, request)
     age = requestdata['requestage']
     if (age < 0) or (age > 590): # is our SAMLRequest old or invalid?
       self.redirect('https://mail.google.com/a/' + domain)
