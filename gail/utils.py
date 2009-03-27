@@ -20,7 +20,6 @@ def unpackSAMLRequest (self, SAMLRequest):
   #Takes a base64 and zlib compresed SAMLRequest and returns
   #a dict of attributes
 
-  now = time.mktime(time.gmtime())
   try:
     SAMLRequest = b64decode(SAMLRequest)
   except TypeError:
@@ -31,17 +30,18 @@ def unpackSAMLRequest (self, SAMLRequest):
     self.redirect('https://mail.google.com/a/'+settings.GAPPS_DOMAIN)
   try:
     requestxml = minidom.parseString(SAMLRequest)
-  except ExpatError:
+  except:
     self.redirect('https://mail.google.com/a/'+settings.GAPPS_DOMAIN)
   requestdateString = requestxml.firstChild.attributes['IssueInstant'].value + ' UTC' # Google doesn't specify but it's UTC
   requestdate = time.mktime(time.strptime(requestdateString, "%Y-%m-%dT%H:%M:%SZ %Z"))
+  now = time.mktime(time.gmtime())
   return {
          'requestage': now - requestdate,
          'acsurl': requestxml.firstChild.attributes['AssertionConsumerServiceURL'].value,
          'providername': requestxml.firstChild.attributes['ProviderName'].value,
          'requestid': requestxml.firstChild.attributes['ID'].value
          }
-          
+
 def userCanBecomeUser (apps, username, loginname):
   # Takes a apps resource, username and loginname.  Checks to see if username has rights
   # to login as loginname using ADMINS_BECOME_USER or USERS_BECOME_USERS.  Returns True/False.

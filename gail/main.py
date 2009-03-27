@@ -33,7 +33,6 @@ class ShowLogin(webapp.RequestHandler):
 
 class DoLogin(webapp.RequestHandler):
   def post(self):
-    templatepath = os.path.join(os.path.dirname(__file__), 'templates')
     becomeattempt = False
     loginvalue = str(self.request.get('username'))
     if loginvalue.find('+') != -1:
@@ -59,9 +58,15 @@ class DoLogin(webapp.RequestHandler):
         self.redirect('/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=Unknown%20Username%20or%20Password')
     self.response.out.write(utils.createAutoPostResponse(self, self.request.get('SAMLRequest'), username))
 
+class Password(webapp.RequestHandler):
+  def get(self):
+    self.response.out.write(open(templates/password.html).read())
+  
+      
 application = webapp.WSGIApplication(
                                      [('/dologin', DoLogin),
-                                      ('/', ShowLogin)],
+                                      ('/', ShowLogin),
+                                      ('/password', Password)],
                                      debug=False)
 
 def main():
