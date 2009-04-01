@@ -15,8 +15,8 @@ class ShowLogin(webapp.RequestHandler):
       self.redirect('https://mail.google.com/a/' + domain)
       return
     requestdata = utils.unpackSAMLRequest(self, self.request.get('SAMLRequest'))
-    age = requestdata['requestage']
-    if (not isinstance(age, int)) or (age < 0) or (age > 590): # is our SAMLRequest old or invalid?
+    age = int(requestdata['requestage'])
+    if (age < 0) or (age > 590): # is our SAMLRequest old or invalid?
       self.redirect('https://mail.google.com/a/' + domain)
     template_values = {
     #we want to refresh 10 sec before SAMLRequest expires
