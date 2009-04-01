@@ -111,7 +111,7 @@ class DoPassword(webapp.RequestHandler):
     
 application = webapp.WSGIApplication(
                                      [('/dologin', DoLogin),
-                                      ('/', ShowLogin),
+                                      ('/login', ShowLogin),
                                       ('/password', ShowPassword),
                                       ('/dopassword', DoPassword)],
                                      debug=False)
