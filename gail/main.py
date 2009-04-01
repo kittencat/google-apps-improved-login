@@ -43,6 +43,7 @@ class DoLogin(webapp.RequestHandler):
       username = loginvalue
     password = str(self.request.get('password'))
     domain = settings.GAPPS_DOMAIN
+    orig_domain = os.environ['HTTP_REFE
     apps = gdata.apps.service.AppsService(email=username+'@'+domain, domain=domain, password=password)
     gdata.alt.appengine.run_on_appengine(apps, store_tokens=True, single_user_mode=True)
     try:
@@ -60,9 +61,50 @@ class DoLogin(webapp.RequestHandler):
 
 class Password(webapp.RequestHandler):
   def get(self):
-    self.response.out.write(open(templates/password.html).read())
-  
-      
+    templatepath = os.path.join(os.path.dirname(__file__), 'templates')
+    passwordpath = os.path.join(templatepath, 'login.html')
+    template_values = {
+      'domain': settings.GAPPS_DOMAIN,
+      'message': self.request.get('Message')
+      'color': self.request.get('color')
+      }
+    self.response.out.write(template.render(passwordpath, template_values)
+  def post(self):
+    domain = settings.GAPPS_DOMAIN
+    username = str(self.request.get('username'))
+    cpassword = str(self.request.get('cpassword'))
+    npassword1 = str(self.request.get('npassword1'))
+    npassword2 = str(self.request.get('npassword2'))
+    if npassword1 != npassword2:
+      self.redirect('/password?color=red&Message=Your%20Passwords%20Do%20Not%20Match')
+    if len(npassword1) < 6:
+      self.redirect('/password?color=red&Message=Your%20New%20Password%20Is%20To%20Short')
+    apps = gdata.apps.service.AppsService(email=username+'@'+domain, domain=domain, password=cpassword)
+    gdata.alt.appengine.run_on_appengine(apps, store_tokens=True, single_user_mode=True)
+    try:
+      apps.ProgrammaticLogin()
+    except gdata.service.BadAuthentication:
+      self.redirect('/password?color=red&Message=Unknown%20Username%20or%20Password')
+    except gdata.service.CaptchaRequired:
+      self.redirect('/password?color=red&Message=Your%20account%20is%20locked.%20%3Ca%20href%3D%22https%3A//www.google.com/a/'+domain+'/UnlockCaptcha%22%3EClick%20here%20to%20unlock%20it.%3C/a%3E')
+    except:
+      self.redirect('/password?color=red&Message=Unknown%20Error%20Confirming%20Password')
+    apps2 = gdata.apps.service.AppService(email=settings.ADMIN_USER+'@'+domain, domain=domain, password=settings.ADMIN_PASS)
+    try:
+      apps2.ProgrammaticLogin()
+    except:
+      self.redirect('/password?color=red&Message=Unknown%20Error%20Changing%20Password.%20Please%20Report%This%To%Your%Administrator')
+    user = apps2.RetrieveUser(username)
+    user.login.password = npassword1
+    try:
+      apps2.UpdateUser(username, user)
+    except gdata.apps.service.AppsForYourDomainException , e:
+      if e[0]['body'].find('InvalidPassword'):
+        self.redirect('/password?color=red&Message=Your%20New%20Password%20Is%20Invalid.%20Try%20A%20Longer%20Password.')
+      else
+        self.redirect('/password?color=red&Message=Unknown%20Error%20Attempting%20To%20Change%20Password.%20Please%20Report%20This%20To%20Your%20Administrator')
+    self.redirect('/password?color=green&Message=Your%20password%20was%20changed%20successfully.'
+    
 application = webapp.WSGIApplication(
                                      [('/dologin', DoLogin),
                                       ('/', ShowLogin),
