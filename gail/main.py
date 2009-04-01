@@ -110,10 +110,10 @@ class DoPassword(webapp.RequestHandler):
     self.redirect(orig_domain + '/password?color=green&Message=Your%20password%20was%20changed%20successfully.')
     
 application = webapp.WSGIApplication(
-                                     [('/dologin', DoLogin),
-                                      ('/login', ShowLogin),
-                                      ('/password', ShowPassword),
-                                      ('/dopassword', DoPassword)],
+                                     [('/password', ShowPassword),
+                                      ('/dopassword', DoPassword),
+                                      ('/dologin', DoLogin),
+                                      ('/login', ShowLogin)],
                                      debug=False)
 
 def main():

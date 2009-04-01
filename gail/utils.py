@@ -7,7 +7,6 @@ import os
 import random
 import hashlib
 import settings
-#from privkey import key
 import gdata.alt.appengine
 import gdata.apps.service
 import gdata.apps.groups.service
