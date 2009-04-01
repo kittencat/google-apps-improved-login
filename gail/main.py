@@ -62,7 +62,7 @@ class DoLogin(webapp.RequestHandler):
 class ShowPassword(webapp.RequestHandler):
   def get(self):
     templatepath = os.path.join(os.path.dirname(__file__), 'templates')
-    passwordpath = os.path.join(templatepath, 'login.html')
+    passwordpath = os.path.join(templatepath, 'password.html')
     template_values = {
       'domain': settings.GAPPS_DOMAIN,
       'message': self.request.get('Message'),
@@ -109,11 +109,10 @@ class DoPassword(webapp.RequestHandler):
         self.redirect(orig_domain + '/password?color=red&Message=Unknown%20Error%20Attempting%20To%20Change%20Password.%20Please%20Report%20This%20To%20Your%20Administrator')
     self.redirect(orig_domain + '/password?color=green&Message=Your%20password%20was%20changed%20successfully.')
     
-application = webapp.WSGIApplication(
-                                     [('/password', ShowPassword),
-                                      ('/dopassword', DoPassword),
-                                      ('/dologin', DoLogin),
-                                      ('/login', ShowLogin)],
+application = webapp.WSGIApplication([('/password', ShowPassword),
+                                     ('/dopassword', DoPassword),
+                                     ('/dologin', DoLogin),
+                                     ('/login', ShowLogin)],
                                      debug=False)
 
 def main():
