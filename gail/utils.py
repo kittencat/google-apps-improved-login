@@ -22,7 +22,7 @@ def unpackSAMLRequest (self, SAMLRequest):
 
   try:
     SAMLRequest = b64decode(SAMLRequest)
-  except TypeError:
+  except:
     self.redirect('https://mail.google.com/a/'+settings.GAPPS_DOMAIN)
   try:
     SAMLRequest = decompress(SAMLRequest, -8)
@@ -98,6 +98,7 @@ def createAutoPostResponse (self, request, username):
       'responseid': responseid,
       'username': username,
       'domain': settings.GAPPS_DOMAIN,
+      
       'issueinstant': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
       'authninstant': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
       'acsurl': requestdata['acsurl'],
