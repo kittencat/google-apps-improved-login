@@ -94,6 +94,7 @@ class DoPassword(webapp.RequestHandler):
     except:
       self.redirect(orig_domain + '/password?color=red&Message=Unknown%20Error%20Confirming%20Password')
     apps2 = gdata.apps.service.AppsService(email=settings.ADMIN_USER+'@'+domain, domain=domain, password=settings.ADMIN_PASS)
+    gdata.alt.appengine.run_on_appengine(apps2, store_tokens=True, single_user_mode=True)
     try:
       apps2.ProgrammaticLogin()
     except:
