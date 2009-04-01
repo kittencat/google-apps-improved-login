@@ -93,7 +93,7 @@ class DoPassword(webapp.RequestHandler):
       self.redirect(orig_domain + '/password?color=red&Message=Your%20account%20is%20locked.%20%3Ca%20href%3D%22https%3A//www.google.com/a/'+domain+'/UnlockCaptcha%22%3EClick%20here%20to%20unlock%20it.%3C/a%3E')
     except:
       self.redirect(orig_domain + '/password?color=red&Message=Unknown%20Error%20Confirming%20Password')
-    apps2 = gdata.apps.service.AppService(email=settings.ADMIN_USER+'@'+domain, domain=domain, password=settings.ADMIN_PASS)
+    apps2 = gdata.apps.service.AppsService(email=settings.ADMIN_USER+'@'+domain, domain=domain, password=settings.ADMIN_PASS)
     try:
       apps2.ProgrammaticLogin()
     except:
