@@ -113,7 +113,7 @@ application = webapp.WSGIApplication(
                                      [('/dologin', DoLogin),
                                       ('/', ShowLogin),
                                       ('/password', ShowPassword),
-                                      (/dopassword', DoPassword)],
+                                      ('/dopassword', DoPassword)],
                                      debug=False)
 
 def main():
