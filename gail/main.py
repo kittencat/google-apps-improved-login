@@ -68,7 +68,8 @@ class Password(webapp.RequestHandler):
       'message': self.request.get('Message'),
       'color': self.request.get('color')
       }
-    self.response.out.write(template.render(passwordpath, template_values)
+    self.response.out.write(template.render(passwordpath, template_values))
+
   def post(self):
     domain = settings.GAPPS_DOMAIN
     username = str(self.request.get('username'))
