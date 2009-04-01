@@ -43,20 +43,20 @@ class DoLogin(webapp.RequestHandler):
       username = loginvalue
     password = str(self.request.get('password'))
     domain = settings.GAPPS_DOMAIN
-    orig_domain = os.environ['HTTP_REFE
+    orig_domain = os.environ['HTTP_REFERER']
     apps = gdata.apps.service.AppsService(email=username+'@'+domain, domain=domain, password=password)
     gdata.alt.appengine.run_on_appengine(apps, store_tokens=True, single_user_mode=True)
     try:
       apps.ProgrammaticLogin()
     except gdata.service.BadAuthentication:
-      self.redirect('/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=Unknown%20Username%20or%20Password')
+      self.redirect(orig_domain + '/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=Unknown%20Username%20or%20Password')
     except gdata.service.CaptchaRequired:
-      self.redirect('/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=Your%20account%20is%20locked.%20%3Ca%20href%3D%22https%3A//www.google.com/a/'+domain+'/UnlockCaptcha%22%3EClick%20here%20to%20unlock%20it.%3C/a%3E')
+      self.redirect(orig_domain + '/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=Your%20account%20is%20locked.%20%3Ca%20href%3D%22https%3A//www.google.com/a/'+domain+'/UnlockCaptcha%22%3EClick%20here%20to%20unlock%20it.%3C/a%3E')
     if becomeattempt:
       if utils.userCanBecomeUser(apps, username, loginuser):
         username = loginuser
       else:
-        self.redirect('/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=Unknown%20Username%20or%20Password')
+        self.redirect(orig_domain + '/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=Unknown%20Username%20or%20Password')
     self.response.out.write(utils.createAutoPostResponse(self, self.request.get('SAMLRequest'), username))
 
 class Password(webapp.RequestHandler):
