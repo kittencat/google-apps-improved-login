@@ -24,6 +24,16 @@ handlers:
   upload: static/fadeback.jpg
   secure: optional
 
+- url: /password
+  url: /password
+  script: main.py
+  secure: optional
+
+- url: /dopassword
+  url: /dopassword
+  script: main.py
+  secure: always
+
 - url: /dologin
   script: main.py
   secure: always
