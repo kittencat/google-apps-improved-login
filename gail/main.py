@@ -65,7 +65,7 @@ class Password(webapp.RequestHandler):
     passwordpath = os.path.join(templatepath, 'login.html')
     template_values = {
       'domain': settings.GAPPS_DOMAIN,
-      'message': self.request.get('Message')
+      'message': self.request.get('Message'),
       'color': self.request.get('color')
       }
     self.response.out.write(template.render(passwordpath, template_values)
