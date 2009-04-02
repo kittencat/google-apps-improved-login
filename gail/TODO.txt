@@ -1,10 +1,14 @@
 To Do:
 
   - Have someone review the general security of GAIL
-  
+
+  - Implement login reports
+
+  - Code cleanup, simplification
+
+  - Better docs
+
+Been Done:
+
   - Deal with CAPTCHAs that may occur due to our use of ClientLogin:
      http://code.google.com/apis/accounts/docs/AuthForInstalledApps.html#Using
-  
-  - Code cleanup, simplification
-  
-  - Better docs
