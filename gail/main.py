@@ -66,7 +66,7 @@ class ShowPassword(webapp.RequestHandler):
     template_values = {
       'domain': settings.GAPPS_DOMAIN,
       'message': self.request.get('Message'),
-      'color': self.request.get('color'),
+      'message_color': self.request.get('message_color'),
       'appspot_domain': os.environ['APPLICATION_ID']+'.appspot.com'
       }
     self.response.out.write(template.render(passwordpath, template_values))
@@ -75,40 +75,42 @@ class DoPassword(webapp.RequestHandler):
   def post(self):
     domain = settings.GAPPS_DOMAIN
     orig_url = os.environ['HTTP_REFERER']
+    if orig_url = '':
+      orig_url = '/password'
     username = str(self.request.get('username'))
     cpassword = str(self.request.get('cpassword'))
     npassword1 = str(self.request.get('npassword1'))
     npassword2 = str(self.request.get('npassword2'))
     if npassword1 != npassword2:
-      self.redirect(orig_url + '?color=red&Message=Your%20Passwords%20Do%20Not%20Match')
+      self.redirect(orig_url + '?message_color=red&Message=Your%20Passwords%20Do%20Not%20Match')
     if len(npassword1) < 6:
-      self.redirect(orig_url + '?color=red&Message=Your%20New%20Password%20Is%20To%20Short')
+      self.redirect(orig_url + '?message_color=red&Message=Your%20New%20Password%20Is%20To%20Short')
     apps = gdata.apps.service.AppsService(email=username+'@'+domain, domain=domain, password=cpassword)
     gdata.alt.appengine.run_on_appengine(apps, store_tokens=True, single_user_mode=True)
     try:
       apps.ProgrammaticLogin()
     except gdata.service.BadAuthentication:
-      self.redirect(orig_url + '?color=red&Message=Unknown%20Username%20or%20Password')
+      self.redirect(orig_url + '?message_color=red&Message=Unknown%20Username%20or%20Password')
     except gdata.service.CaptchaRequired:
-      self.redirect(orig_url + '?color=red&Message=Your%20account%20is%20locked.%20%3Ca%20href%3D%22https%3A//www.google.com/a/'+domain+'/UnlockCaptcha%22%3EClick%20here%20to%20unlock%20it.%3C/a%3E')
+      self.redirect(orig_url + '?message_color=red&Message=Your%20account%20is%20locked.%20%3Ca%20href%3D%22https%3A//www.google.com/a/'+domain+'/UnlockCaptcha%22%3EClick%20here%20to%20unlock%20it.%3C/a%3E')
     except:
-      self.redirect(orig_url + '/password?color=red&Message=Unknown%20Error%20Confirming%20Password')
+      self.redirect(orig_url + '?message_color=red&Message=Unknown%20Error%20Confirming%20Password')
     apps2 = gdata.apps.service.AppsService(email=settings.ADMIN_USER+'@'+domain, domain=domain, password=settings.ADMIN_PASS)
     gdata.alt.appengine.run_on_appengine(apps2, store_tokens=True, single_user_mode=True)
     try:
       apps2.ProgrammaticLogin()
     except:
-      self.redirect(orig_url + '/password?color=red&Message=Unknown%20Error%20Changing%20Password.%20Please%20Report%This%To%Your%Administrator')
+      self.redirect(orig_url + '?message_color=red&Message=Unknown%20Error%20Changing%20Password.%20Please%20Report%This%To%Your%Administrator')
     user = apps2.RetrieveUser(username)
     user.login.password = npassword1
     try:
       apps2.UpdateUser(username, user)
     except gdata.apps.service.AppsForYourDomainException , e:
       if e[0]['body'].find('InvalidPassword'):
-        self.redirect(orig_url + '/password?color=red&Message=Your%20New%20Password%20Is%20Invalid.%20Try%20A%20Longer%20Password.')
+        self.redirect(orig_url + '?message_color=red&Message=Your%20New%20Password%20Is%20Invalid.%20Try%20A%20Longer%20Password.')
       else:
-        self.redirect(orig_url + '/password?color=red&Message=Unknown%20Error%20Attempting%20To%20Change%20Password.%20Please%20Report%20This%20To%20Your%20Administrator')
-    self.redirect(orig_url + '/password?color=green&Message=Your%20password%20was%20changed%20successfully.')
+        self.redirect(orig_url + '?message_color=red&Message=Unknown%20Error%20Attempting%20To%20Change%20Password.%20Please%20Report%20This%20To%20Your%20Administrator')
+    self.redirect(orig_url + '?message_color=green&Message=Your%20password%20was%20changed%20successfully.')
     
 application = webapp.WSGIApplication([('/password', ShowPassword),
                                      ('/dopassword', DoPassword),
