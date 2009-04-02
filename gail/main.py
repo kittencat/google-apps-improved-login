@@ -75,7 +75,7 @@ class DoPassword(webapp.RequestHandler):
   def post(self):
     domain = settings.GAPPS_DOMAIN
     orig_url = os.environ['HTTP_REFERER']
-    if orig_url = '':
+    if orig_url == '':
       orig_url = '/password'
     username = str(self.request.get('username'))
     cpassword = str(self.request.get('cpassword'))
