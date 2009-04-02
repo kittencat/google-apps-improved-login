@@ -1,69 +1,67 @@
 Installing Google Apps Improved Login (GAIL)
 
-1. While GAIL is ultimately hosted on Google's App Engine Servers, it is necessary to download and install a few programs in order to prepare your domain for Google Apps.  First, we'll install the Google App Engine SDK.  The SDK allows us to upload GAIL to Google App Engine.  When you install the SDK on Windows, you'll be asked to make sure Python 2.5.x is already installed on your machine.  Since it probably isn't, click one of the links and download it.  It doesn't matter whether you use Python.org or ActiveState's version.  Just be sure that you get Python 2.5.x.  There are newer versions of Python (2.6 and 3.0) but they are not backwards compatible and Google Apps Engine uses 2.5.x.  Once Python 2.5.x is installed, continue your Google Apps SDK installation.  For simplicities sake, I recommend you change the default installation path of the SDK to something shorter like C:\AppEngine instead of the default C:\Program Files\Google\google_appengine but just be sure to take note of where you install it.
+1. While GAIL is ultimately hosted on Google's App Engine Servers, it is necessary to download and install a few programs in order to prepare your domain for Google Apps. First, we'll install the Google App Engine SDK. The SDK allows us to upload GAIL to Google App Engine. When you install the SDK on Windows, you'll be asked to make sure Python 2.5.x is already installed on your machine. Since it probably isn't, click one of the links and download it. It doesn't matter whether you use Python.org or Active State's version. Just be sure that you get Python 2.5.x. There are newer versions of Python (2.6 and 3.0) but they are not backwards compatible and Google Apps Engine uses 2.5.x. Once Python 2.5.x is installed, continue your Google Apps SDK installation. For simplicities sake, I recommend you change the default installation path of the SDK to something shorter like C:\appengine instead of the default C:\Program Files\Google\google_appengine but just be sure to take note of where you install it.
 
-2. Now you'll need to signup for Google App Engine.  Visit http://appengine.google.com to sign up.  Currently, App Engine requires that you verify yourself with an SMS text message.  Once you are verified, proceed to create your application.  The name you choose for your application will be seen by users when they visit the login page so make it something significant.  You do not need to configure authentication for your application, just leave the defaults.  Make a note of your Application's Domain.  It should be yourappname.appspot.com.
+2. Now you'll need to signup for Google App Engine. Visit http://appengine.google.com to sign up. Currently, App Engine requires that you verify yourself with an SMS text message. Once you are verified, proceed to create your application. The name you choose for your application will be seen by users when they visit the login page so make it something significant. You do not need to configure authentication for your application, just leave the defaults. Make a note of your Application's Domain. It should be yourappname.appspot.com.
 
-3. Extract your downloaded version of GAIL to the folder where you installed the SDK in step 1.  For example, if you chose C:\AppEngine for the SDK, GAIL's files should reside in C:\AppEngine\GAIL\.
+3. Extract your downloaded version of GAIL to the folder where you installed the SDK in step 1. For example, if you chose C:\appengine for the SDK, GAIL's files should reside in C:\appengine\GAIL\.
 
-4. Now you'll need to get a copy of OpenSSL in order to generate your RSA public and private keys.  Windows users can download OpenSSL for Win32 from:
+4. Now you'll need to get a copy of OpenSSL in order to generate your RSA public and private keys. Windows users can download OpenSSL for Win32 from:
 
-  http://www.slproweb.com/products/Win32OpenSSL.html
-  
+    http://www.slproweb.com/products/Win32OpenSSL.html 
+
 you'll need to download the Win32 OpenSSL Light file as well as the Visual C++ 2008 Redistributable.
 
 5. Once you have OpenSSL installed open a command prompt and run the following commands to create your private and public keys:
 
-  cd \OpenSSL\bin  # or wherever your OpenSSL.exe file exists
-  openssl genrsa -out privkey.pem 2048
-  openssl rsa -in privkey.pem -pubout -outform DER -out pubkey.der
-  
-this will leave you with two files, privkey.pem and pubkey.der.  Make sure you take note of the path where your privkey.pem and pubkey.der files are stored (C:\OpenSSL\bin by default).  pubkey.der is the public key that we will upload to Google's servers in a later step but first.  privkey.pem is our private key that GAIL will use.  Copy privkey.pem to your GAIL folder (e.g. c:\appengine\gail).
+cd \OpenSSL\bin  # or wherever your OpenSSL.exe file exists
+openssl genrsa -out privkey.pem 2048
+openssl rsa -in privkey.pem -pubout -outform DER -out pubkey.der
 
-7. Open the settings.py file in your GAIL directory.  Currently the only two settings are GAPPS_DOMAIN and ADMINS_BECOME_USERS.  Change GAPPS_DOMAIN to match your Google Apps Domain name (everything after the @ in your email address).  By default, Admins are allowed to log in as any user.  If you want to turn this feature off, change the True to be False.  Pay close to attention to changes made to settings.py, if you misplace or remove the quote marks, or don't capitilize the first letter of True or False, you'll break GAIL.  Note that lines starting with # are comments and are ignored.  Save your changes to settings.py
+this will leave you with two files, privkey.pem and pubkey.der. Make sure you take note of the path where your privkey.pem and pubkey.der files are stored (C:\OpenSSL\bin by default). pubkey.der is the public key that we will upload to Google's servers in a later step. privkey.pem is your private key that GAIL will use for signing. Copy privkey.pem to your GAIL folder (e.g. c:\appengine\gail\)
 
-8. Open app.yaml in your GAIL directory.  The only change you need to make here is the name of your application.  This should be the same as the name of the application you created in App Engine back in step 2.  You're app.yaml should look something like:
+6. Open the settings.py file in your GAIL directory. Change GAPPS_DOMAIN to match your Google Apps Domain name (everything after the @ in your email address). By default, Admins are allowed to log in as any user. If you want to turn this feature off, change the True to be False. If you want to allow certain users to be able to login as other users, change USERS_BECOME_USERS to True. You'll then need to setup groups in your Google Apps Dashboard, details are in the comments above the USERS_BECOME_USERS setting. Both the USERS_BECOME_USERS and the Password change functionality of GAIL requires that ADMIN_USER and ADMIN_PASS are set. I recommend creating a special Google Apps Administrator account for use by GAIL. If you use a special account, you can set the password to be very complex and you will not need to worry about the password being changed by the admin.  Pay close to attention to changes made to settings.py, if you misplace or remove the quote marks, or don't capitilize the first letter of True or False, you'll break GAIL. Note that lines starting with # are comments and are ignored. Save your changes to settings.py
 
--- app.yaml --
+7. Open app.yaml in your GAIL directory. The only change you need to make here is the name of your application. This should be the same as the name of the application you created in App Engine back in step 2. You're app.yaml should look something like:
+
 application: your-application-name
 version: 1
 runtime: python
 api_version: 1
 ...
 ...
--- app.yaml --
 
 save your changes to app.yaml.
 
-9. Awesome!  Now we're ready to upload GAIL to Google's App Engine Servers.  Open a command prompt and run the following:
+8. Awesome! Now we're ready to upload GAIL to Google's App Engine Servers. Open a command prompt and run the following:
 
-  cd \AppEngine           # or wherever you installed the App Engine SDK
+  cd \appengine           # or wherever you installed the App Engine SDK
   appcfg.py update gail/
-  
-Now GAIL is all ready to take over as your login page!  Just as few more steps as we configure your Google Apps Domain to use GAIL.
 
-10. Log into your Google Apps Dashboard.  You can always log directly into the Dashboard by going to:
+Now GAIL is all ready to take over as your login page! Just as few more steps as we configure your Google Apps Domain to use GAIL.
 
-  https://google.com/a/example.com
-  
-where example.com is your Google Apps Domain.  The direct link to Dashboard does not use your GAIL login page so be it's very useful if GAIL breaks for you.  Once logged we need to turn the Provisioning API on.  Click the "Users and Groups" Tab, then the Settings sub-tab.  Make sure "Enable provisioning API" is checked and Save Changes.
+9. Log into your Google Apps Dashboard. You can always log directly into the Dashboard by going to:
 
-11. Now click the "Set up single sign-on (SSO)" link.  Be careful here!  Once you check off "Enable Single Sign-on", your users will start using SSO whether it's working or not!  Until your ready, leave it unchecked.  Google Apps will allow you to change everything else on the page and remember save your settings then enable sso when you're ready.  The "Enable Single Sign-on" is also handy if something breaks down the line.  Just log in to the dashboard and uncheck "Enable Single Sign-on" while leaving the rest of your settings, users will go back to using the old Google login page while you investigate the issue.
+    https://google.com/a/example.com 
 
-12. For "Sign-in page URL" put:
+where example.com is your Google Apps Domain. The direct link to Dashboard does not use your GAIL login page so be it's very useful if GAIL breaks for you. Once logged we need to turn the Provisioning API on. Click the "Users and Groups" Tab, then the Settings sub-tab. Make sure "Enable provisioning API" is checked and Save Changes.
 
-  https://your-application-name.appspot.com
-  
-Note the httpS above, we want to keep usernames and passwords secure so we use an HTTPS SSL connection to appspot.com.  For "Sign-out page URL" put the same thing:
+10. Now click the "Set up single sign-on (SSO)" link. Be careful here! Once you check off "Enable Single Sign-on", your users will start using SSO whether it's working or not! Until your ready, leave it unchecked. Google Apps will allow you to change everything else on the page and remember save your settings then enable sso when you're ready. The "Enable Single Sign-on" is also handy if something breaks down the line. Just log in to the dashboard and uncheck "Enable Single Sign-on" while leaving the rest of your settings, users will go back to using the old Google login page while you investigate the issue.
 
-  https://your-application-name.appspot.com
-  
-for "Change passowrd URL" put:
+11. For "Sign-in page URL" put:
 
-  https://your-application-name.appspot.com/password
-  
-Now we need to upload our pubkey.der certificate file.  Remember this is the public key that we created back in step 5.  Google Apps will use this public key to verify messages sent by our GAIL which were signed with our private key.  Once we've uploaded pubkey.der, click save changes.
+    https://your-application-name.appspot.com 
 
-13.  Now's the big moment!  Check off "Enable Single Sign-on" and give it a shot!  If it doesn't work, double check your settings.  You might find it useful to open two different web browsers (like Firefox and Internet Explorer).  In one browser, stay logged in to the Google Apps Dashboard, in the other, test your user's logins.
+Note the httpS above, we want to keep usernames and passwords secure so we use an HTTPS SSL connection to appspot.com. For "Sign-out page URL" put the same thing:
 
-Have fun!
+    https://your-application-name.appspot.com 
+
+for "Change password URL" put:
+
+    https://your-application-name.appspot.com/password 
+
+Now we need to upload our pubkey.der certificate file. Remember this is the public key that we created back in step 5. Google Apps will use this public key to verify messages sent by our GAIL which were signed with our private key. Once we've uploaded pubkey.der, click save changes.
+
+12. Now's the big moment! Check off "Enable Single Sign-on" and give it a shot! If it doesn't work, double check your settings. You might find it useful to open two different web browsers (like Firefox and Internet Explorer). In one browser, stay logged in to the Google Apps Dashboard, in the other, test your user's logins.
+
+Have fun! 
