@@ -36,7 +36,7 @@ class DoLogin(webapp.RequestHandler):
     becomeattempt = False
     loginvalue = str(self.request.get('username'))
     orig_url = os.environ['HTTP_REFERER']
-    if loginvalue == '' or loginvalue == Null:
+    if loginvalue == '':
       self.redirect(orig_url + '/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=You%20Must%20Enter%20A%20Username.')
     if loginvalue.find('+') != -1:
       username = loginvalue[0:(loginvalue.find('+'))]
@@ -45,7 +45,7 @@ class DoLogin(webapp.RequestHandler):
     else:
       username = loginvalue
     password = str(self.request.get('password'))
-    if password == '' or password == Null:
+    if password == '':
       self.redirect(orig_url + '/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=You%20Must%20Enter%20A%20Password.')
     domain = settings.GAPPS_DOMAIN
     apps = gdata.apps.service.AppsService(email=username+'@'+domain, domain=domain, password=password)
