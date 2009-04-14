@@ -35,6 +35,9 @@ class DoLogin(webapp.RequestHandler):
   def post(self):
     becomeattempt = False
     loginvalue = str(self.request.get('username'))
+    orig_url = os.environ['HTTP_REFERER']
+    if loginvalue == '' or loginvalue == NULL:
+      self.redirect(orig_url + '/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=You%20Must%20Enter%20A%20Username.')
     if loginvalue.find('+') != -1:
       username = loginvalue[0:(loginvalue.find('+'))]
       loginuser = loginvalue[(loginvalue.find('+') + 1):]
@@ -42,8 +45,9 @@ class DoLogin(webapp.RequestHandler):
     else:
       username = loginvalue
     password = str(self.request.get('password'))
+    if password == '' or password == NULL:
+      self.redirect(orig_url + '/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=You%20Must%20Enter%20A%20Password.')
     domain = settings.GAPPS_DOMAIN
-    orig_url = os.environ['HTTP_REFERER']
     apps = gdata.apps.service.AppsService(email=username+'@'+domain, domain=domain, password=password)
     gdata.alt.appengine.run_on_appengine(apps, store_tokens=True, single_user_mode=True)
     try:
