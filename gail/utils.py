@@ -12,6 +12,7 @@ import gdata.apps.service
 import gdata.apps.groups.service
 from google.appengine.ext.webapp import template
 from gdata.tlslite.utils.RSAKey import RSAKey
+from gdata.tlslite.utils.cryptomath import numberToBase64
 import gdata.tlslite.utils.compat
 import gdata.tlslite.utils.keyfactory
 
@@ -119,9 +120,8 @@ def createAutoPostResponse (self, request, username):
     signedInfo = signedInfo[0:(len(signedInfo) - 1)] # get rid of last newline
     key = gdata.tlslite.utils.keyfactory.parsePEMKey(open('privkey.pem').read(), private=True)
     signvalue = b64encode(key.hashAndSign(gdata.tlslite.utils.compat.stringToBytes(signedInfo)))      
-    keyinfo = key.write()
-    modulus = keyinfo[keyinfo.find('<n>')+3:keyinfo.find('</n>')]
-    exponent = keyinfo[keyinfo.find('<e>')+3:keyinfo.find('</e>')]
+    modulus = numberToBase64(key.n)
+    exponent = numberToBase64(key.e)
     template_values.update({'signvalue': signvalue, 'modulus': modulus, 'exponent': exponent})
     responsepath = os.path.join(templatepath, 'response.xml')
     signedresponse = b64encode(template.render(responsepath, template_values))
