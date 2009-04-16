@@ -23,15 +23,15 @@ def unpackSAMLRequest (self, SAMLRequest):
   try:
     SAMLRequest = b64decode(SAMLRequest)
   except:
-    self.redirect('https://mail.google.com/a/'+settings.GAPPS_DOMAIN)
+    gailRedirect(self, 'https://mail.google.com/a/'+settings.GAPPS_DOMAIN)
   try:
     SAMLRequest = decompress(SAMLRequest, -8)
   except:
-    self.redirect('https://mail.google.com/a/'+settings.GAPPS_DOMAIN)
+    gailRedirect(self, 'https://mail.google.com/a/'+settings.GAPPS_DOMAIN)
   try:
     requestxml = minidom.parseString(SAMLRequest)
   except:
-    self.redirect('https://mail.google.com/a/'+settings.GAPPS_DOMAIN)
+    gailRedirect(self, 'https://mail.google.com/a/'+settings.GAPPS_DOMAIN)
   requestdateString = requestxml.firstChild.attributes['IssueInstant'].value + ' UTC' # Google doesn't specify but it's UTC
   requestdate = time.mktime(time.strptime(requestdateString, "%Y-%m-%dT%H:%M:%SZ %Z"))
   now = time.mktime(time.gmtime())
@@ -61,7 +61,7 @@ def userCanBecomeUser (apps, username, loginname):
     try:
       groupsadmin.ProgrammaticLogin()
     except gdata.service.BadAuthentication:
-      self.redirect('/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=Invalid%20GAIL%20settings.%20Please%20talk%20to%20your%20network%20administrator.')
+      gailRedirect(self, '/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=Invalid%20GAIL%20settings.%20Please%20talk%20to%20your%20network%20administrator.')
     lists = groupsadmin.RetrieveGroups(username)
     canBecome = False
     for group in lists:
@@ -86,7 +86,7 @@ def createAutoPostResponse (self, request, username):
     requestdata = unpackSAMLRequest(self, request)
     age = requestdata['requestage']
     if (age < 0) or (age > 590): # is our SAMLRequest old or invalid?
-      self.redirect('https://mail.google.com/a/' + domain)
+      gailRedirect(self, 'https://mail.google.com/a/' + domain)
     ranchars = 'abcdefghijklmnop'
     responseid = ''
     assertid = ''
@@ -108,7 +108,6 @@ def createAutoPostResponse (self, request, username):
       'notafter': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(int(time.time()) + (10 * 60)))  # 10 minutes from now
       }
     responsepath = os.path.join(templatepath, 'response.xml')
-    #response = template.render(responsepath, template_values)
     digestpath = os.path.join(templatepath, 'digest.xml')
     digestPart = template.render(digestpath, template_values)
     digestPart = digestPart[0:(len(digestPart) - 2)] # template adds \n\n at end of string, remove it
@@ -132,3 +131,19 @@ def createAutoPostResponse (self, request, username):
       'relaystate': self.request.get('RelayState') # template takes care of escaping for IE
       }
     return template.render(autopostpath, autopost_values)
+    
+def gailRedirect (self, url):
+
+  #Takes a URL and redirects the user there then exits Python.
+  #We do this because AppEngine's self.redirect() doesn't seem to work 100%
+
+  print ("""Content-Type: text/html
+
+<html>
+<head>
+  <meta http-equiv="refresh" content="0;url=%s">
+</head>
+<body>
+</body>
+</html>""" % (url,))
+  exit()

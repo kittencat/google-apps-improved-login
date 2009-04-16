@@ -3,7 +3,6 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 import gdata.alt.appengine
 import os
 import gdata.apps.service
-import urllib
 import settings
 import utils
 from google.appengine.ext.webapp import template
@@ -12,12 +11,12 @@ class ShowLogin(webapp.RequestHandler):
   def get(self):
     domain = settings.GAPPS_DOMAIN
     if self.request.get('SAMLRequest') == '':
-      self.redirect('https://mail.google.com/a/' + domain)
+      utils.gailRedirect(self, 'https://mail.google.com/a/' + domain)
       return
     requestdata = utils.unpackSAMLRequest(self, self.request.get('SAMLRequest'))
     age = int(requestdata['requestage'])
     if (age < 0) or (age > 590): # is our SAMLRequest old or invalid?
-      self.redirect('https://mail.google.com/a/' + domain)
+      utils.gailRedirect(self, 'https://mail.google.com/a/' + domain)
     template_values = {
     #we want to refresh 10 sec before SAMLRequest expires
       'refresh': int(590 - age),
@@ -35,7 +34,12 @@ class DoLogin(webapp.RequestHandler):
   def post(self):
     becomeattempt = False
     loginvalue = str(self.request.get('username'))
-    orig_url = os.environ['HTTP_REFERER']
+    if os.environ['HTTP_REFERER']:
+      orig_url = os.environ['HTTP_REFERER']
+    else:
+      orig_url = str(os.environ['PATH_INFO'])+'?'+str(os.environ['QUERY_STRING'])
+    if orig_url.find('&Error') != -1:
+      orig_url = orig_url[0:orig_url.find('&Error')]
     if loginvalue.find('+') != -1:
       username = loginvalue[0:(loginvalue.find('+'))]
       loginuser = loginvalue[(loginvalue.find('+') + 1):]
@@ -49,20 +53,16 @@ class DoLogin(webapp.RequestHandler):
     try:
       apps.ProgrammaticLogin()
     except gdata.service.BadAuthentication:
-      self.redirect(orig_url + '/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=Unknown%20Username%20or%20Password')
+      utils.gailRedirect(self, orig_url + '&Error=Unknown%20Username%20or%20Password')
     except gdata.service.CaptchaRequired:
-      self.redirect(orig_url + '/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=Your%20account%20is%20locked.%20%3Ca%20href%3D%22https%3A//www.google.com/a/'+domain+'/UnlockCaptcha%22%3EClick%20here%20to%20unlock%20it.%3C/a%3E')
+      utils.gailRedirect(self, orig_url + '&Error=Your%20account%20is%20locked.%20%3Ca%20href%3D%22https%3A//www.google.com/a/'+domain+'/UnlockCaptcha%22%3EClick%20here%20to%20unlock%20it.%3C/a%3E')
     except:
-      self.redirect(orig_url + '/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=Unknown%20Error.%20Please%20Try%20Again.')
-    try:
-      token = apps.current_token.get_token_string()
-    except:
-      self.redirect(orig_url + '/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=Unknown%20Error.%20Please%20Try%20Again.')
+      utils.gailRedirect(self, orig_url + '&Error=Unknown%20Error.%20Please%20Try%20Again.')
     if becomeattempt:
       if utils.userCanBecomeUser(apps, username, loginuser):
         username = loginuser
       else:
-        self.redirect(orig_url + '/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=Unknown%20Username%20or%20Password')
+        utils.gailRedirect(self, orig_url + '&Error=Unknown%20Username%20or%20Password')
     self.response.out.write(utils.createAutoPostResponse(self, self.request.get('SAMLRequest'), username))
 
 class ShowPassword(webapp.RequestHandler):
@@ -80,43 +80,46 @@ class ShowPassword(webapp.RequestHandler):
 class DoPassword(webapp.RequestHandler):
   def post(self):
     domain = settings.GAPPS_DOMAIN
-    orig_url = os.environ['HTTP_REFERER']
-    if orig_url == '':
+    if os.environ['HTTP_REFERER']:
+      orig_url = os.environ['HTTP_REFERER']
+      if orig_url.find('?') != -1:
+        orig_url = orig_url[0:orig_url.find('?')]
+    else:
       orig_url = '/password'
     username = str(self.request.get('username'))
     cpassword = str(self.request.get('cpassword'))
     npassword1 = str(self.request.get('npassword1'))
     npassword2 = str(self.request.get('npassword2'))
     if npassword1 != npassword2:
-      self.redirect(orig_url + '?message_color=red&Message=Your%20Passwords%20Do%20Not%20Match')
+      utils.gailRedirect(self, orig_url + '?message_color=red&Message=Your%20Passwords%20Do%20Not%20Match')
     if len(npassword1) < 6:
-      self.redirect(orig_url + '?message_color=red&Message=Your%20New%20Password%20Is%20To%20Short')
+      utils.gailRedirect(self, orig_url + '?message_color=red&Message=Your%20New%20Password%20Is%20To%20Short')
     apps = gdata.apps.service.AppsService(email=username+'@'+domain, domain=domain, password=cpassword)
     gdata.alt.appengine.run_on_appengine(apps, store_tokens=True, single_user_mode=True)
     try:
       apps.ProgrammaticLogin()
     except gdata.service.BadAuthentication:
-      self.redirect(orig_url + '?message_color=red&Message=Unknown%20Username%20or%20Password')
+      utils.gailRedirect(self, orig_url + '?message_color=red&Message=Unknown%20Username%20or%20Password')
     except gdata.service.CaptchaRequired:
-      self.redirect(orig_url + '?message_color=red&Message=Your%20account%20is%20locked.%20%3Ca%20href%3D%22https%3A//www.google.com/a/'+domain+'/UnlockCaptcha%22%3EClick%20here%20to%20unlock%20it.%3C/a%3E')
+      utils.gailRedirect(self, orig_url + '?message_color=red&Message=Your%20account%20is%20locked.%20%3Ca%20href%3D%22https%3A//www.google.com/a/'+domain+'/UnlockCaptcha%22%3EClick%20here%20to%20unlock%20it.%3C/a%3E')
     except:
-      self.redirect(orig_url + '?message_color=red&Message=Unknown%20Error%20Confirming%20Password')
+      utils.gailRedirect(self, orig_url + '?message_color=red&Message=Unknown%20Error%20Confirming%20Password')
     apps2 = gdata.apps.service.AppsService(email=settings.ADMIN_USER+'@'+domain, domain=domain, password=settings.ADMIN_PASS)
     gdata.alt.appengine.run_on_appengine(apps2, store_tokens=True, single_user_mode=True)
     try:
       apps2.ProgrammaticLogin()
     except:
-      self.redirect(orig_url + '?message_color=red&Message=Unknown%20Error%20Changing%20Password.%20Please%20Report%This%To%Your%Administrator')
+      utils.gailRedirect(self, orig_url + '?message_color=red&Message=Unknown%20Error%20Changing%20Password.%20Please%20Report%This%To%Your%Administrator')
     user = apps2.RetrieveUser(username)
     user.login.password = npassword1
     try:
       apps2.UpdateUser(username, user)
     except gdata.apps.service.AppsForYourDomainException , e:
       if e[0]['body'].find('InvalidPassword'):
-        self.redirect(orig_url + '?message_color=red&Message=Your%20New%20Password%20Is%20Invalid.%20Try%20A%20Longer%20Password.')
+        utils.gailRedirect(self, orig_url + '?message_color=red&Message=Your%20New%20Password%20Is%20Invalid.%20Try%20A%20Longer%20Password.')
       else:
-        self.redirect(orig_url + '?message_color=red&Message=Unknown%20Error%20Attempting%20To%20Change%20Password.%20Please%20Report%20This%20To%20Your%20Administrator')
-    self.redirect(orig_url + '?message_color=green&Message=Your%20password%20was%20changed%20successfully.')
+        utils.gailRedirect(self, orig_url + '?message_color=red&Message=Unknown%20Error%20Attempting%20To%20Change%20Password.%20Please%20Report%20This%20To%20Your%20Administrator')
+    utils.gailRedirect(self, orig_url + '?message_color=green&Message=Your%20password%20was%20changed%20successfully.')
     
 application = webapp.WSGIApplication([('/password', ShowPassword),
                                      ('/dopassword', DoPassword),
