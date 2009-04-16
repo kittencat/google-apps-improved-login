@@ -36,8 +36,6 @@ class DoLogin(webapp.RequestHandler):
     becomeattempt = False
     loginvalue = str(self.request.get('username'))
     orig_url = os.environ['HTTP_REFERER']
-    if loginvalue == '':
-      self.redirect(orig_url + '/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=You%20Must%20Enter%20A%20Username.')
     if loginvalue.find('+') != -1:
       username = loginvalue[0:(loginvalue.find('+'))]
       loginuser = loginvalue[(loginvalue.find('+') + 1):]
@@ -45,8 +43,6 @@ class DoLogin(webapp.RequestHandler):
     else:
       username = loginvalue
     password = str(self.request.get('password'))
-    if password == '':
-      self.redirect(orig_url + '/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=You%20Must%20Enter%20A%20Password.')
     domain = settings.GAPPS_DOMAIN
     apps = gdata.apps.service.AppsService(email=username+'@'+domain, domain=domain, password=password)
     gdata.alt.appengine.run_on_appengine(apps, store_tokens=True, single_user_mode=True)
@@ -56,6 +52,10 @@ class DoLogin(webapp.RequestHandler):
       self.redirect(orig_url + '/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=Unknown%20Username%20or%20Password')
     except gdata.service.CaptchaRequired:
       self.redirect(orig_url + '/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=Your%20account%20is%20locked.%20%3Ca%20href%3D%22https%3A//www.google.com/a/'+domain+'/UnlockCaptcha%22%3EClick%20here%20to%20unlock%20it.%3C/a%3E')
+    except:
+      self.redirect(orig_url + '/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=Unknown%20Error.%20Please%20Try%20Again.')
+    try:
+      token = apps.current_token.get_token_string()
     except:
       self.redirect(orig_url + '/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=Unknown%20Error.%20Please%20Try%20Again.')
     if becomeattempt:
