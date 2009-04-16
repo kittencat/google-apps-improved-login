@@ -56,6 +56,8 @@ class DoLogin(webapp.RequestHandler):
       self.redirect(orig_url + '/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=Unknown%20Username%20or%20Password')
     except gdata.service.CaptchaRequired:
       self.redirect(orig_url + '/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=Your%20account%20is%20locked.%20%3Ca%20href%3D%22https%3A//www.google.com/a/'+domain+'/UnlockCaptcha%22%3EClick%20here%20to%20unlock%20it.%3C/a%3E')
+    except:
+      self.redirect(orig_url + '/?SAMLRequest='+urllib.quote(self.request.get('SAMLRequest'))+'&RelayState='+urllib.quote(self.request.get('RelayState'))+'&Error=Unknown%20Error.%20Please%20Try%20Again.')
     if becomeattempt:
       if utils.userCanBecomeUser(apps, username, loginuser):
         username = loginuser
