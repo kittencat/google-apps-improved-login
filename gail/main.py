@@ -23,7 +23,7 @@ class ShowLogin(webapp.RequestHandler):
       'samlrequest': self.request.get('SAMLRequest'),
       'relaystate': self.request.get('RelayState'),
       'message': self.request.get('Error'),
-	  'message_color': 'red',
+      'message_color': 'red',
       'domain': domain,
       'appspot_domain': os.environ['APPLICATION_ID']+'.appspot.com'
       }
