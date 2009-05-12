@@ -39,6 +39,7 @@ import atom.core
 import gdata.service
 import atom.http_core
 import gdata.gauth
+import gdata.data
 
 
 # Old imports
@@ -69,6 +70,14 @@ class ClientLoginFailed(Error):
   pass
 
 
+class UnableToUpgradeToken(Error):
+  pass
+
+
+class Unauthorized(Error):
+  pass
+
+
 def v2_entry_from_response(response):
   """Experimental converter which gets an Atom entry from the response."""
   return gdata.data.entry_from_string(response.read(), version=2)
@@ -91,8 +100,8 @@ def create_converter(obj):
     A function which takes an XML string as the only parameter and returns an
     object of the same type as obj.
   """
-  return lambda response_body: atom.core.xml_element_from_string(
-      response_body, obj.__class__, version=2, encoding='UTF-8')
+  return lambda response: atom.core.xml_element_from_string(
+      response.read(), obj.__class__, version=2, encoding='UTF-8')
 
 
 class GDClient(atom.client.AtomPubClient):
@@ -119,9 +128,15 @@ class GDClient(atom.client.AtomPubClient):
 
   You may also want to set the auth_token member to a an object which can
   use modify_request to set the Authorization header in the HTTP request.
+
   If you are authenticating using the email address and password, you can
   use the client_login method to obtain an auth token and set the
   auth_token member.
+
+  If you are using browser redirects, specifically AuthSub, you will want
+  to use gdata.gauth.AuthSubToken.from_url to obtain the token after the
+  redirect, and you will probably want to updgrade this since use token
+  to a multiple use (session) token using the upgrade_token method.
 
   API Versions:
 
@@ -206,7 +221,7 @@ class GDClient(atom.client.AtomPubClient):
       return None
     if response.status == 200 or response.status == 201:
       if converter is not None:
-        return converter(response.read())
+        return converter(response)
       return response
     # TODO: move the redirect logic into the Google Calendar client once it
     # exists since the redirects are only used in the calendar API.
@@ -229,6 +244,11 @@ class GDClient(atom.client.AtomPubClient):
       else:
         raise RedirectError('Too many redirects from server %s' % (
             response.read(),))
+    elif response.status == 401:
+      error = Unauthorized('Server responded with %i, %s' % (
+          response.status, response.read()))
+      error.http_status = 401
+      raise error
     else:
       raise gdata.service.RequestError('Server responded with %i, %s' % (
           response.status, response.read()))
@@ -237,18 +257,17 @@ class GDClient(atom.client.AtomPubClient):
 
   def request_client_login_token(self, email, password, service, source,
       account_type='HOSTED_OR_GOOGLE', 
-      auth_url='https://www.google.com/accounts/ClientLogin', 
+      auth_url=atom.http_core.Uri.parse_uri(
+          'https://www.google.com/accounts/ClientLogin'), 
       captcha_token=None, captcha_response=None):
-    http_request = atom.http_core.HttpRequest()
+    # Set the target URL.
+    http_request = atom.http_core.HttpRequest(uri=auth_url, method='POST')
     http_request.add_body_part(
         gdata.gauth.generate_client_login_request_body(email=email, 
             password=password, service=service, source=source, 
             account_type=account_type, captcha_token=captcha_token, 
             captcha_response=captcha_response),
         'application/x-www-form-urlencoded')
-    http_request.method = 'POST'
-    # Set the target URL.
-    atom.http_core.Uri.parse_uri(auth_url).modify_request(http_request)
 
     # Use the underlying http_client to make the request.
     response = self.http_client.request(http_request)
@@ -297,6 +316,48 @@ class GDClient(atom.client.AtomPubClient):
         captcha_token=captcha_token, captcha_response=captcha_response)
 
   ClientLogin = client_login
+
+  def upgrade_token(self, token=None, url=atom.http_core.Uri.parse_uri(
+      'https://www.google.com/accounts/AuthSubSessionToken')):
+    """Asks the Google auth server for a multi-use AuthSub token.
+
+    For details on AuthSub, see:
+    http://code.google.com/apis/accounts/docs/AuthSub.html
+    
+    Args:
+      token: gdata.gauth.AuthSubToken (optional) If no token is passed in, 
+             the client's auth_token member is used to request the new token.
+             The token object will be modified to contain the new session 
+             token string.
+      url: str or atom.http_core.Uri (optional) The URL to which the token
+           upgrade request should be sent. Defaults to: 
+           https://www.google.com/accounts/AuthSubSessionToken
+
+    Returns:
+      The upgraded gdata.gauth.AuthSubToken object.
+    """
+    # Default to using the auth_token member if no token is provided.
+    if token is None:
+      token = self.auth_token
+    # We cannot upgrade a None token.
+    if token is None:
+      raise UnableToUpgradeToken('No token was provided.')
+    if not isinstance(token, gdata.gauth.AuthSubToken):
+      raise UnableToUpgradeToken(
+          'Cannot upgrade the token because it is not an AuthSubToken object.')
+    http_request = atom.http_core.HttpRequest(uri=url, method='GET')
+    token.modify_request(http_request)
+    # Use the lower level HttpClient to make the request.
+    response = self.http_client.request(http_request)
+    if response.status == 200:
+      token._upgrade_token(response.read())
+      return token
+    else:
+      raise UnableToUpgradeToken(
+          'Server responded to token upgrade request with %s: %s' % (
+              response.status, response.read()))
+
+  UpgradeToken = upgrade_token
 
   def modify_request(self, http_request):
     """Adds or changes request before making the HTTP request.
