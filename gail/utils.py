@@ -49,10 +49,10 @@ def userCanBecomeUser (apps, username, loginname):
   if settings.ADMINS_BECOME_USER:
     try:
       LookupUser = apps.RetrieveUser(username)
+      if LookupUser.login.admin == 'true':
+        return True
     except gdata.apps.service.AppsForYourDomainException , e:
       pass
-    if LookupUser.login.admin == 'true':
-      return True
   if settings.USERS_BECOME_USERS:
     # Only admins can do group lookups via prov. API so we must login as one
     domain = settings.GAPPS_DOMAIN
