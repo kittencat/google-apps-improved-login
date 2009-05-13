@@ -22,8 +22,7 @@ class ShowLogin(webapp.RequestHandler):
       'refresh': int(590 - age),
       'samlrequest': self.request.get('SAMLRequest'),
       'relaystate': self.request.get('RelayState'),
-      'message': self.request.get('Error'),
-      'message_color': 'red',
+      'error': self.request.get('Error'),
       'domain': domain,
       'appspot_domain': os.environ['APPLICATION_ID']+'.appspot.com'
       }
@@ -121,11 +120,15 @@ class DoPassword(webapp.RequestHandler):
       else:
         utils.gailRedirect(self, orig_url + '?message_color=red&Message=Unknown%20Error%20Attempting%20To%20Change%20Password.%20Please%20Report%20This%20To%20Your%20Administrator')
     utils.gailRedirect(self, orig_url + '?message_color=green&Message=Your%20password%20was%20changed%20successfully.')
+
+def DoGailAdmin(webapp.RequestHandler):
+  def get(self):
     
 application = webapp.WSGIApplication([('/password', ShowPassword),
                                      ('/dopassword', DoPassword),
                                      ('/dologin', DoLogin),
-                                     ('/', ShowLogin)],
+                                     ('/', ShowLogin),
+									 ('/gailadmin', DoGailAdmin)],
                                      debug=False)
 
 def main():
