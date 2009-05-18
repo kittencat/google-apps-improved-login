@@ -39,3 +39,7 @@ handlers:
 - url: /
   script: main.py
   secure: optional
+  
+- url: /gailadmin
+  script: main.py
+  secure: always
