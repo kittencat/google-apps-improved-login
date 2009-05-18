@@ -6,6 +6,15 @@ import gdata.apps.service
 import settings
 import utils
 from google.appengine.ext.webapp import template
+from google.appengine.ext import db
+
+class Settings(db.Model):
+  domain = db.StringProperty(multiline=False)
+  adminsbecomeusers = db.BooleanProperty()
+  usersbecomeusers = db.BooleanProperty()
+  adminuser = db.StringProperty(multiline=False)
+  adminpass = db.StringProperty(multiline=False)
+  privatekey = db.StringProperty(multiline=True)
 
 class ShowLogin(webapp.RequestHandler):
   def get(self):
@@ -124,7 +133,26 @@ class DoPassword(webapp.RequestHandler):
 
 def DoGailAdmin(webapp.RequestHandler):
   def get(self):
-    
+    settings = db.GqlQuery("SELECT * FROM Settings")
+    templatepath = os.path.join(os.path.dirname(__file__), 'templates')
+    gailadminpath = os.path.join(templatepath, 'gailadmin.html')
+    self.response.out.write(template.render(gailadminpath, settings))
+  def post(self):
+    settings = Settings()
+    settings.domain = self.request.get('domain')
+    if self.request.get('adminsbecomeusers').lower() == 'checked':
+      settings.adminsbecomeusers = True
+    else:
+      settings.adminsbecomeusers = False
+    if self.request.get('usersbecomeusers').lower() == 'checked':
+      settings.usersbecomeusers = True
+    else:
+      settings.usersbecomeusers = False
+    settings.adminuser = self.request.get('adminuser')
+    settings.adminpass = self.request.get('adminpass')
+    settings.put()
+    utils.gailRedirect(self, '/gailadmin')
+
 application = webapp.WSGIApplication([('/password', ShowPassword),
                                      ('/dopassword', DoPassword),
                                      ('/dologin', DoLogin),
