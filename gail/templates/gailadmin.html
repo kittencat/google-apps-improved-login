@@ -1,0 +1,73 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <style type="text/css">
+  	  <!--
+        body {
+	      background-image: url(fadeback.jpg);
+	      background-repeat: repeat-x;
+        }
+      -->
+	</style>
+    <title>GAIL Admin Settings for {{ domain }}</title>
+    <link href="gail.css" rel="stylesheet" type="text/css" />
+    <link rel="icon" type="image/icon" href="/favicon.ico" />
+  </head>
+  <body>
+    <table width="650" border="0" align="center" cellpadding="10" bgcolor="#FFFFFF" class="border">
+      <tr>
+        <td colspan="2"><div align="center">
+		  <a href="https://mail.google.com/a/{{ domain }}">
+		  <image src="https://www.google.com/a/cpanel/{{ domain }}/images/logo.gif"
+   		    alt="Google Apps Login" width="143" height="59" border="0">
+		  </a><br />
+          <hr noshade="noshade" size="1" />
+        </div></td>
+	  </tr>
+	  <tr>
+	    <td width="35%" valign="top"><p>GAIL Admin Settings for {{ domain }}.</p>
+        <p>Configure GAIL's Settings here.</p>
+      </td>
+      <td width="65%" valign="top">
+		    <div align="center">
+          <p><strong>Basic Settings</strong></p>
+        </div>
+        <form name="chpass" action="https://{{ appspot_domain }}/gailadmin" method="post">
+        <table width="100%" border="0" cellspacing="5">
+          <tr>
+            <td><div align="right">Google Apps Domain:</div></td>
+            <td colspan="2"><input type="text" tabindex="1" name="domain" size="30" value="{{ domain }}"/></td>
+          </tr>
+          <tr>
+            <td><div align="right"><input type="checkbox" tabindex="2" name="adminsbecomeusers" {{ adminsbecomeusers }}/></div></td>
+            <td><div align="left">Admins can login as users</div></td>
+          </tr>
+          <tr>
+            <td><div align="right"><input type="checkbox" tabindex="3" name="usersbecomeusers" {{ usersbecomeusers }} /></div></td>
+            <td><div align="left">Users can login as users</div></td>
+          </tr>
+          <tr>
+            <td><div align="right">Administrator Username: </div></td>
+            <td><input type="text" tabindex="4" name="adminuser" size="12" value="{{ adminuser }}" /></td>
+          </tr>
+          <tr>
+            <td><div align="right">Administrator Password: </div></td>
+            <td><input type="password" tabindex="4" name="adminpass" size="12" value="{{ adminpass }}" /></td>
+          </tr>
+          <tr>
+            <td colspan="2"><input name="Save" tabindex="5" type="submit" value="Save"><input name="Back to Login" tabindex="6" type="button" onclick="window.location.href='/'" value="Back to Login"></td>
+          </tr>
+        </table>
+        </form>
+      </td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>
+          <p><font color="{{ message_color }}">{{ message }}</font></p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
