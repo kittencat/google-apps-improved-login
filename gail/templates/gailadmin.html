@@ -56,10 +56,6 @@
             <td><input type="radio" name="usersbecomeusers" value="True" {% ifequal usersbecomeusers 'True' %}checked{% endifequal %}>Enabled <input type="radio" name="usersbecomeusers" value="False" {% ifequal usersbecomeusers 'False' %}checked{% endifequal %}>Disabled</td>
           </tr>
           <tr>
-            <td><div align="right">Private Key Version</div></td>
-            <td>{{ privkey_ver }}</td>
-          </tr>
-          <tr>
             <td><div align="right">Keys Match?</div></td>
             <td>{{ keymatch }}</td>
           </tr>

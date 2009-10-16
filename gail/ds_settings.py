@@ -24,7 +24,10 @@ def getSetting(name):
       elif name == 'adminpass':
         value = settings.ADMIN_PASS.encode('rot13')
       elif name == 'privkey':
-        value = open('privkey.pem').read()
+        try:
+          value = open('privkey.pem').read()
+        except IOError:
+          pass
       elif name == 'privkey_ver':
         value = 'pre GAIL 0.5 key'
       setSetting(name, value)

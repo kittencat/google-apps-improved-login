@@ -33,11 +33,11 @@ def putGoogleSSO(gailUrl, pubkey):
   except gdata.service.BadAuthentication:
     return(2)
   pubkey = b64encode(pubkey)
-  admin.UpdateSSOKey(pubkey)
   admin.UpdateSSOSettings(enableSSO=True, samlSignonUri=gailUrl,
                           samlLogoutUri=gailUrl,
                           changePasswordUri=gailUrl+'password')
-
+  admin.UpdateSSOKey(pubkey)
+  
 def GetGooglePubKey(self):
   domain = os.environ['AUTH_DOMAIN'] 
   email = ds_settings.getSetting('adminuser')+'@'+domain
@@ -53,6 +53,8 @@ def GetGooglePubKey(self):
     seq = ASN1Sequence(oid, pubkey)
     pubkeydata = encoder.encode(seq)
   except gdata.service.BadAuthentication:
+    pubkeydata = 'failed'
+  except gdata.apps.service.AppsForYourDomainException:
     pubkeydata = 'failed'
   return pubkeydata
 

@@ -132,12 +132,17 @@ class DoGailAdmin(webapp.RequestHandler):
     template_values['adminuser'] = ds_settings.getSetting('adminuser')
     template_values['adminsbecomeusers'] = ds_settings.getSetting('adminsbecomeusers')
     template_values['usersbecomeusers'] = ds_settings.getSetting('usersbecomeusers')
-    template_values['privkey_ver'] = ds_settings.getSetting('privkey_ver')
     template_values['adminpass'] = '*****'
-    gailpubkey = utils.getPubkey(self, ds_settings.getSetting('privkey'))
+    privkey = ds_settings.getSetting('privkey')
+    if privkey != None:
+      gailpubkey = utils.getPubkey(self, privkey)
+    else:
+      gailpubkey = 'failed'
     googlepubkey = utils.GetGooglePubKey(self)
-    if googlepubkey == 'failed':
-      template_values['keymatch'] = 'Login to check failed'
+    if gailpubkey == 'failed':
+      template_values['keymatch'] = 'GAIL has no keys!'
+    elif googlepubkey == 'failed':
+      template_values['keymatch'] = 'Failed to get Google Public Key'
     elif gailpubkey == googlepubkey:
       template_values['keymatch'] = 'Yes'
     else:
@@ -199,19 +204,6 @@ class DoEditTemplates(webapp.RequestHandler):
     ds_templates.updateTemplate('password.html', password_template_data)
     utils.gailRedirect(self, '/edittemplates')
 
-class GetDynamicFile(webapp.RequestHandler):
-  def get(self):
-    file_name = str(self.request.get('file'))
-    if len(file_name) > 12:
-      return
-    allowedchars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_'
-    for i in file_name[:]:
-      if allowedchars.find(i) == -1:
-        return
-    file = filestore.getFile(file_name)
-    self.response.headers['Content-Type'] = file['file_type']
-    self.response.out.write(file['file_data'])
-
 class PutDynamicFile(webapp.RequestHandler):
   def post(self):
     file_data = self.request.get('file')
@@ -224,9 +216,20 @@ class PutDynamicFile(webapp.RequestHandler):
         return
     file_type = self.request.body_file.vars['file'].headers['content-type']
     filestore.setFile(file_name, file_type, file_data)
-    self.response.out.write('Hello')
     utils.gailRedirect(self, '/edittemplates')
- 
+
+class DelDynamicFile(webapp.RequestHandler):
+  def get(self):
+    file_name = os.environ['PATH_INFO'][11:]
+    if len(file_name) > 15:
+      return
+    allowedchars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_'
+    for i in file_name[:]:
+      if allowedchars.find(i) == -1:
+        return
+    file = filestore.delFile(file_name)
+    utils.gailRedirect(self, '/edittemplates')
+
 application = webapp.WSGIApplication([('/password', ShowPassword),
                                      ('/dopassword', DoPassword),
                                      ('/dologin', DoLogin),
@@ -236,8 +239,8 @@ application = webapp.WSGIApplication([('/password', ShowPassword),
                                      ('/getpubkey', DoPubKey),
                                      ('/updategooglesso', DoUpdateGoogleSSO),
                                      ('/edittemplates', DoEditTemplates),
-                                     ('/dfile', GetDynamicFile),
-                                     ('/upload-dfile', PutDynamicFile)],
+                                     ('/upload-dfile', PutDynamicFile),
+                                     ('/del-dfile/.*', DelDynamicFile)],
                                      debug=True)
 
 def main():

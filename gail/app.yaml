@@ -1,4 +1,4 @@
-application: mygailapp 
+application: mygailapp2
 version: 1
 runtime: python
 api_version: 1
@@ -61,10 +61,16 @@ handlers:
   secure: always
   login: admin
 
-- url: /dfile
-  script: main.py
+- url: /dfile/(.*)
+  script: dfile.py
   secure: optional
 
 - url: /upload-dfile
   script: main.py
   secure: optional
+  login: admin
+
+- url: /del-dfile(.*)
+  script: main.py
+  secure: optional
+  login: admin

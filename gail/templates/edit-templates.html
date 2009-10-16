@@ -14,7 +14,7 @@
     <link href="gail.css" rel="stylesheet" type="text/css" />
     <link rel="icon" type="image/icon" href="/favicon.ico" />
   </head>
-  <body onload="document.templates.login-html.focus();">
+  <body>
     <table width=90% border="0" align="center" cellpadding="10" bgcolor="#FFFFFF" class="border">
       <tr>
         <td colspan="2"><div align="center">
@@ -53,11 +53,13 @@
   <tr>
     <th>File:</th>
     <th>Mime:</th>
+    <th>Delete:</th>
   </tr>
   {% for file in filelist %}
   <tr>
-    <td>{{ file.file_name|escape }}</td>
+    <td><a href="/dfile/{{ file.file_name|escape }}">{{ file.file_name|escape }}</a></td>
     <td>{{ file.file_type|escape }}</td>
+    <td align="center"><a href="/del-dfile/{{ file.file_name|escape }}">X</a></td>
   </tr>
   {% endfor %}
 </table>

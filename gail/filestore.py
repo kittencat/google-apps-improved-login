@@ -6,6 +6,11 @@ class Filestore(db.Model):
   file_type = db.StringProperty(multiline=False)
   file_data = db.BlobProperty()
 
+def delFile(file_name):
+  retrievefiles = Filestore.gql("WHERE file_name = :1 LIMIT 1", file_name)
+  for retrievefile in retrievefiles:
+    retrievefile.delete()
+
 def getFile(file_name):
   retrievefiles = Filestore.gql("WHERE file_name = :1 LIMIT 1", file_name)
   file = {}
