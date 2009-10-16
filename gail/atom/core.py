@@ -16,7 +16,6 @@
 
 
 # This module is used for version 2 of the Google Data APIs.
-# TODO: handle UTF-8 and unicode as done in src/atom/__init__.py
 
 
 __author__ = 'j.s@google.com (Jeff Scudder)'
@@ -41,11 +40,13 @@ STRING_ENCODING = 'utf-8'
 class XmlElement(object):
   """Represents an element node in an XML document.
   
-  The text member is a UTF-8 encoded str.
+  The text member is a UTF-8 encoded str or unicode.
   """
   _qname = None
   _other_elements = None
   _other_attributes = None
+  # The rule set contains mappings for XML qnames to child members and the
+  # appropriate member classes.
   _rule_set = None
   _members = None
   text = None
@@ -96,6 +97,33 @@ class XmlElement(object):
   _list_xml_members = classmethod(_list_xml_members)
 
   def _get_rules(cls, version):
+    """Initializes the _rule_set for the class which is used when parsing XML.
+
+    This method is used internally for parsing and generating XML for an
+    XmlElement. It is not recommended that you call this method directly.
+    
+    Returns:
+      A tuple containing the XML parsing rules for the appropriate version.
+
+      The tuple looks like: 
+      (qname, {sub_element_qname: (member_name, member_class, repeating), ..},
+       {attribute_qname: member_name})
+
+      To give a couple of concrete example, the atom.data.Control _get_rules
+      with version of 2 will return:
+      ('{http://www.w3.org/2007/app}control',
+       {'{http://www.w3.org/2007/app}draft': ('draft',
+                                              <class 'atom.data.Draft'>,
+                                              False)}, 
+       {})
+      Calling _get_rules with version 1 on gdata.data.FeedLink will produce:
+      ('{http://schemas.google.com/g/2005}feedLink',
+       {'{http://www.w3.org/2005/Atom}feed': ('feed',
+                                              <class 'gdata.data.GDFeed'>,
+                                              False)},
+       {'href': 'href', 'readOnly': 'read_only', 'countHint': 'count_hint',
+        'rel': 'rel'})
+    """
     # Initialize the _rule_set to make sure there is a slot available to store
     # the parsing rules for this version of the XML schema.
     # Look for rule set in the class __dict__ proxy so that only the 
@@ -190,6 +218,14 @@ class XmlElement(object):
     return matches
 
   GetElements = get_elements
+  # FindExtensions and FindChildren are provided for backwards compatibility
+  # to the atom.AtomBase class.
+  # However, FindExtensions may return more results than the v1 atom.AtomBase
+  # method does, because get_elements searches both the expected children
+  # and the unexpected "other elements". The old AtomBase.FindExtensions
+  # method searched only "other elements" AKA extension_elements.
+  FindExtensions = get_elements
+  FindChildren = get_elements
     
   def get_attributes(self, tag=None, namespace=None, version=1):
     """Find all attributes which match the tag and namespace.
@@ -236,12 +272,13 @@ class XmlElement(object):
           if getattr(self, definition[0]) is None:
             setattr(self, definition[0], [])
           getattr(self, definition[0]).append(_xml_element_from_tree(element,
-              definition[1]))
+              definition[1], version))
         else:
           setattr(self, definition[0], _xml_element_from_tree(element, 
-              definition[1]))
+              definition[1], version))
       else:
-        self._other_elements.append(_xml_element_from_tree(element, XmlElement))
+        self._other_elements.append(_xml_element_from_tree(element, XmlElement,
+                                                           version))
     for attrib, value in tree.attrib.iteritems():
       if attributes and attrib in attributes:
         setattr(self, attributes[attrib], value)
@@ -266,8 +303,10 @@ class XmlElement(object):
             other_attributes and other_elements are also added a children
             of this tree.
       version: int Ingnored in this method but used by VersionedElement.
+      encoding: str (optional)
     """
     qname, elements, attributes = self.__class__._get_rules(version)
+    encoding = encoding or STRING_ENCODING
     # Add the expected elements and attributes to the tree.
     if elements:
       for tag, element_def in elements.iteritems():
@@ -287,14 +326,16 @@ class XmlElement(object):
     for element in self._other_elements:
       element._become_child(tree, version)
     for key, value in self._other_attributes.iteritems():
+      # I'm not sure if unicode can be used in the attribute name, so for now
+      # we assume the encoding is correct for the attribute name.
+      if not isinstance(value, unicode):
+        value = value.decode(encoding)
       tree.attrib[key] = value
     if self.text:
       if isinstance(self.text, unicode):
         tree.text = self.text
-      elif encoding is not None:
-        tree.text = self.text.decode(encoding)
       else:
-        tree.text = self.text.decode(STRING_ENCODING)
+        tree.text = self.text.decode(encoding)
 
   def to_string(self, version=1, encoding=None):
     """Converts this object to XML."""
@@ -302,12 +343,82 @@ class XmlElement(object):
 
   ToString = to_string
 
+  def __str__(self):
+    return self.to_string()
+
   def _become_child(self, tree, version=1):
     """Adds a child element to tree with the XML data in self."""
     new_child = ElementTree.Element('')
     tree.append(new_child)
     new_child.tag = _get_qname(self, version)
     self._attach_members(new_child, version)
+
+  def __get_extension_elements(self):
+    return self._other_elements
+
+  def __set_extension_elements(self, elements):
+    self._other_elements = elements
+
+  extension_elements = property(__get_extension_elements, 
+      __set_extension_elements, 
+      """Provides backwards compatibility for v1 atom.AtomBase classes.""")
+
+  def __get_extension_attributes(self):
+    return self._other_attributes
+
+  def __set_extension_attributes(self, attributes):
+    self._other_attributes = attributes
+
+  extension_attributes = property(__get_extension_attributes, 
+      __set_extension_attributes, 
+      """Provides backwards compatibility for v1 atom.AtomBase classes.""")
+
+  def _get_tag(self, version=1):
+    qname = _get_qname(self, version)
+    return qname[qname.find('}')+1:]
+
+  def _get_namespace(self, version=1):
+    qname = _get_qname(self, version)
+    if qname.startswith('{'):
+      return qname[1:qname.find('}')]
+    else:
+      return None
+
+  def _set_tag(self, tag):
+    if isinstance(self._qname, tuple):
+      self._qname = self._qname.copy()
+      if self._qname[0].startswith('{'):
+        self._qname[0] = '{%s}%s' % (self._get_namespace(1), tag)
+      else:
+        self._qname[0] = tag
+    else:
+      if self._qname.startswith('{'):
+        self._qname = '{%s}%s' % (self._get_namespace(), tag)
+      else:
+        self._qname = tag
+
+  def _set_namespace(self, namespace):
+    if isinstance(self._qname, tuple):
+      self._qname = self._qname.copy()
+      if namespace:
+         self._qname[0] = '{%s}%s' % (namespace, self._get_tag(1))
+      else:
+         self._qname[0] = self._get_tag(1)
+    else:
+      if namespace:
+         self._qname = '{%s}%s' % (namespace, self._get_tag(1))
+      else:
+         self._qname = self._get_tag(1)
+
+  tag = property(_get_tag, _set_tag, 
+      """Provides backwards compatibility for v1 atom.AtomBase classes.""")
+
+  namespace = property(_get_namespace, _set_namespace, 
+      """Provides backwards compatibility for v1 atom.AtomBase classes.""")
+
+  # Provided for backwards compatibility to atom.ExtensionElement
+  children = extension_elements
+  attributes = extension_attributes
 
 
 def _get_qname(element, version):
@@ -367,16 +478,20 @@ def _qname_matches(tag, namespace, qname):
           and member_namespace is None))
 
 
-def xml_element_from_string(xml_string, target_class, 
-    version=1, encoding=None):
+def parse(xml_string, target_class=None, version=1, encoding=None):
   """Parses the XML string according to the rules for the target_class.
 
   Args:
     xml_string: str or unicode
-    target_class: XmlElement or a subclass.
+    target_class: XmlElement or a subclass. If None is specified, the
+        XmlElement class is used.
     version: int (optional) The version of the schema which should be used when
-             converting the XML into an object. The default is 1.
+        converting the XML into an object. The default is 1.
+    encoding: str (optional) The character encoding of the bytes in the
+        xml_string. Default is 'UTF-8'. 
   """
+  if target_class is None:
+    target_class = XmlElement
   if isinstance(xml_string, unicode):
     if encoding is None:
       xml_string = xml_string.encode(STRING_ENCODING)
@@ -386,6 +501,8 @@ def xml_element_from_string(xml_string, target_class,
   return _xml_element_from_tree(tree, target_class, version)
 
 
+Parse = parse
+xml_element_from_string = parse
 XmlElementFromString = xml_element_from_string
 
 
@@ -398,7 +515,7 @@ def _xml_element_from_tree(tree, target_class, version=1):
   # TODO handle the namespace-only case
   # Namespace only will be used with Google Spreadsheets rows and 
   # Google Base item attributes.
-  elif tree.tag == target_class._qname:
+  elif tree.tag == _get_qname(target_class, version):
     instance = target_class()
     instance._harvest_tree(tree, version)
     return instance
@@ -410,3 +527,4 @@ class XmlAttribute(object):
   def __init__(self, qname, value):
     self._qname = qname
     self.value = value
+

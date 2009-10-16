@@ -29,10 +29,12 @@ class AtomPubClient(object):
   host = None
   auth_token = None
 
-  def __init__(self, http_client=None, host=None, auth_token=None, **kwargs):
+  def __init__(self, http_client=None, host=None,
+               auth_token=None, source=None, **kwargs):
     """Creates a new AtomPubClient instance.
     
     Args:
+      source: The name of your application.
       http_client: An object capable of performing HTTP requests through a
                    request method. This object is used to perform the request
                    when the AtomPubClient's request method is called. Used to
@@ -44,11 +46,12 @@ class AtomPubClient(object):
       auth_token: An object which sets the HTTP Authorization header when its
                   modify_request method is called.
     """
-    self.http_client = http_client or atom.http_core.HttpClient()
+    self.http_client = http_client or atom.http_core.ProxiedHttpClient()
     if host is not None:
       self.host = host
     if auth_token is not None:
       self.auth_token = auth_token
+    self.source = source
 
   def request(self, method=None, uri=None, auth_token=None,
               http_request=None, **kwargs):
@@ -64,14 +67,9 @@ class AtomPubClient(object):
       auth_token: An authorization token object whose modify_request method
                   sets the HTTP Authorization header.
     """
-    if http_request is None:
-      http_request = atom.http_core.HttpRequest()
-    # If the http_request didn't specify the target host, use the client's
-    # default host (if set).
-    if self.host is not None and http_request.uri.host is None:
-      http_request.uri.host = self.host
     # Modify the request based on the AtomPubClient settings and parameters
     # passed in to the request.
+    http_request = self.modify_request(http_request)
     if isinstance(uri, (str, unicode)):
       uri = atom.http_core.Uri.parse_uri(uri)
     if uri is not None:
@@ -125,3 +123,17 @@ class AtomPubClient(object):
                         http_request=http_request, **kwargs)
 
   Delete = delete
+
+  def modify_request(self, http_request):
+    if http_request is None:
+      http_request = atom.http_core.HttpRequest()
+    if self.host is not None and http_request.uri.host is None:
+      http_request.uri.host = self.host
+    # Set the user agent header for logging purposes.
+    if self.source:
+      http_request.headers['User-Agent'] = '%s gdata-py/2.0.2' % self.source
+    else:
+      http_request.headers['User-Agent'] = 'gdata-py/2.0.1'
+    return http_request
+
+  ModifyRequest = modify_request

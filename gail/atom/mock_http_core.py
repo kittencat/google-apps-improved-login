@@ -29,7 +29,7 @@ import atom.http_core
 
 
 class MockHttpClient(object):
-
+  debug = None
   real_client = None
 
   # The following members are used to construct the session cache temp file
@@ -68,6 +68,9 @@ class MockHttpClient(object):
         if _match_request(recording[0], request):
           return recording[1]
     else:
+      # Pass along the debug settings to the real client.
+      self.real_client.debug = self.debug
+      # Make an actual request since we can use the real HTTP client.
       response = self.real_client.request(http_request)
       _scrub_response(response)
       self.add_response(request, response.status, response.reason, 
@@ -246,7 +249,12 @@ class SettableHttpClient(object):
   """An HTTP Client which responds with the data given in set_response."""
 
   def __init__(self, status, reason, body, headers):
+    """Configures the response for the server.
+    
+    See set_response for details on the arguments to the constructor.
+    """
     self.set_response(status, reason, body, headers)
+    self.last_request = None
 
   def set_response(self, status, reason, body, headers):
     """Determines the response which will be sent for each request.
@@ -263,6 +271,7 @@ class SettableHttpClient(object):
     self.response._headers = headers.copy()
 
   def request(self, http_request):
+    self.last_request = http_request
     return self.response
 
 

@@ -39,7 +39,7 @@
                  user is either not authenticated or is authenticated through
                  another authentication mechanism.
 
-  RequestError: Raised if a CRUD request returned a non-success code. 
+  RequestError: Raised if a CRUD request returned a non-success code.
 
   UnexpectedReturnType: Raised if the response from the server was not of the
                         desired type. For example, this would be raised if the
@@ -135,7 +135,9 @@ CLIENT_LOGIN_SCOPES = {
     'youtube': [ # YouTube
         'http://gdata.youtube.com/feeds/api/',
         'http://uploads.gdata.youtube.com/feeds/api',
-        'http://gdata.youtube.com/action/GetUploadToken']}
+        'http://gdata.youtube.com/action/GetUploadToken'],
+    'books': ['http://www.google.com/books/feeds/'],
+    'analytics': ['https://www.google.com/analytics/feeds/']}
 
 
 def lookup_scopes(service_name):
@@ -280,6 +282,10 @@ class GDataService(atom.service.AtomService):
     if http_request_handler.__name__ == 'gdata.urlfetch':
       import gdata.alt.appengine
       self.http_client = gdata.alt.appengine.AppEngineHttpClient()
+
+  def _SetSessionId(self, session_id):
+    """Used in unit tests to simulate a 302 which sets a gsessionid."""
+    self.__gsessionid = session_id
  
   # Define properties for GDataService
   def _SetAuthSubToken(self, auth_token, scopes=None):
@@ -322,7 +328,7 @@ class GDataService(atom.service.AtomService):
 
   def _GetCaptchaURL(self):
     """Returns the URL of the captcha image if a login attempt generated one.
-     
+
     The captcha URL is only set if the Programmatic Login attempt failed
     because the Google service issued a captcha challenge.
 
@@ -337,14 +343,17 @@ class GDataService(atom.service.AtomService):
   captcha_url = property(__GetCaptchaURL,
       doc="""Get the captcha URL for a login request.""")
 
+  def GetOAuthInputParameters(self):
+    return self._oauth_input_params
+
   def SetOAuthInputParameters(self, signature_method, consumer_key,
                               consumer_secret=None, rsa_key=None,
-                              two_legged_oauth=False):
+                              two_legged_oauth=False, requestor_id=None):
     """Sets parameters required for using OAuth authentication mechanism.
-    
+
     NOTE: Though consumer_secret and rsa_key are optional, either of the two
     is required depending on the value of the signature_method.
-    
+
     Args:
       signature_method: class which provides implementation for strategy class
           oauth.oauth.OAuthSignatureMethod. Signature method to be used for
@@ -357,21 +366,24 @@ class GDataService(atom.service.AtomService):
           Required only for HMAC_SHA1 signature method.
       rsa_key: string (optional) Private key required for RSA_SHA1 signature
           method.
-      two_legged_oauth: string (default=False) Enables two-legged OAuth process.
+      two_legged_oauth: boolean (optional) Enables two-legged OAuth process.
+      requestor_id: string (optional) User email adress to make requests on
+          their behalf.  This parameter should only be set when two_legged_oauth
+          is True.
     """
     self._oauth_input_params = gdata.auth.OAuthInputParams(
         signature_method, consumer_key, consumer_secret=consumer_secret,
-        rsa_key=rsa_key)
+        rsa_key=rsa_key, requestor_id=requestor_id)
     if two_legged_oauth:
       oauth_token = gdata.auth.OAuthToken(
           oauth_input_params=self._oauth_input_params)
       self.SetOAuthToken(oauth_token)
-  
+
   def FetchOAuthRequestToken(self, scopes=None, extra_parameters=None,
                              request_url='%s/accounts/OAuthGetRequestToken' % \
-                             AUTH_SERVER_HOST):
-    """Fetches OAuth request token and returns it.
-    
+                             AUTH_SERVER_HOST, oauth_callback=None):
+    """Fetches and sets the OAuth request token and returns it.
+
     Args:
       scopes: string or list of string base URL(s) of the service(s) to be
           accessed. If None, then this method tries to determine the
@@ -385,10 +397,14 @@ class GDataService(atom.service.AtomService):
           extra_parameters = {'oauth_version': '2.0'}
       request_url: Request token URL. The default is
           'https://www.google.com/accounts/OAuthGetRequestToken'.
-      
+      oauth_callback: str (optional) If set, it is assume the client is using
+          the OAuth v1.0a protocol where the callback url is sent in the
+          request token step.  If the oauth_callback is also set in
+          extra_params, this value will override that one.
+
     Returns:
       The fetched request token as a gdata.auth.OAuthToken object.
-      
+
     Raises:
       FetchingOAuthRequestTokenFailed if the server responded to the request
       with an error.
@@ -397,6 +413,11 @@ class GDataService(atom.service.AtomService):
       scopes = lookup_scopes(self.service)
     if not isinstance(scopes, (list, tuple)):
       scopes = [scopes,]
+    if oauth_callback:
+      if extra_parameters is not None:
+        extra_parameters['oauth_callback'] = oauth_callback
+      else:
+        extra_parameters = {'oauth_callback': oauth_callback}
     request_token_url = gdata.auth.GenerateOAuthRequestTokenUrl(
         self._oauth_input_params, scopes,
         request_token_url=request_url,
@@ -407,10 +428,11 @@ class GDataService(atom.service.AtomService):
       token.set_token_string(response.read())
       token.scopes = scopes
       token.oauth_input_params = self._oauth_input_params
+      self.SetOAuthToken(token)
       return token
     error = {
         'status': response.status,
-        'reason': 'Non 200 response on upgrade',
+        'reason': 'Non 200 response on fetch request token',
         'body': response.read()
         }
     raise FetchingOAuthRequestTokenFailed(error)    
@@ -491,7 +513,8 @@ class GDataService(atom.service.AtomService):
   
   def UpgradeToOAuthAccessToken(self, authorized_request_token=None,
                                 request_url='%s/accounts/OAuthGetAccessToken' \
-                                % AUTH_SERVER_HOST, oauth_version='1.0'):
+                                % AUTH_SERVER_HOST, oauth_version='1.0',
+                                oauth_verifier=None):
     """Upgrades the authorized request token to an access token and returns it
     
     Args:
@@ -499,11 +522,14 @@ class GDataService(atom.service.AtomService):
           token. If not specified, then the current token will be used if it is
           of type <gdata.auth.OAuthToken>, else it is found by looking in the
           token_store by looking for a token for the current scope.
+      request_url: Access token URL. The default is
+          'https://www.google.com/accounts/OAuthGetAccessToken'.
       oauth_version: str (default='1.0') oauth_version parameter. All other
           'oauth_' parameters are added by default. This parameter too, is
           added by default but here you can override it's value.
-      request_url: Access token URL. The default is
-          'https://www.google.com/accounts/OAuthGetAccessToken'.
+      oauth_verifier: str (optional) If present, it is assumed that the client
+        will use the OAuth v1.0a protocol which includes passing the
+        oauth_verifier (as returned by the SP) in the access token step.
     
     Returns:
       Access token
@@ -532,7 +558,8 @@ class GDataService(atom.service.AtomService):
         authorized_request_token,
         self._oauth_input_params,
         access_token_url=request_url,
-        oauth_version=oauth_version)
+        oauth_version=oauth_version,
+        oauth_verifier=oauth_verifier)
     response = self.http_client.request('GET', str(access_token_url))
     if response.status == 200:
       token = gdata.auth.OAuthTokenFromHttpBody(response.read())
@@ -1190,10 +1217,9 @@ class GDataService(atom.service.AtomService):
 
     if self.__gsessionid is not None:
       if uri.find('gsessionid=') < 0:
-        if uri.find('?') > -1:
-          uri += '&gsessionid=%s' % (self.__gsessionid,)
-        else:
-          uri += '?gsessionid=%s' % (self.__gsessionid,)
+        if url_params is None:
+          url_params = {}
+        url_params['gsessionid'] = self.__gsessionid
 
     if data and media_source:
       if ElementTree.iselement(data):
@@ -1216,7 +1242,7 @@ class GDataService(atom.service.AtomService):
       extra_headers['Content-Type'] = 'multipart/related; boundary=END_OF_PART'
       server_response = self.request(verb, uri, 
           data=[multipart[0], data_str, multipart[1], media_source.file_handle,
-              multipart[2]], headers=extra_headers)
+              multipart[2]], headers=extra_headers, url_params=url_params)
       result_body = server_response.read()
       
     elif media_source or isinstance(data, gdata.MediaSource):
@@ -1225,7 +1251,8 @@ class GDataService(atom.service.AtomService):
       extra_headers['Content-Length'] = str(media_source.content_length)
       extra_headers['Content-Type'] = media_source.content_type
       server_response = self.request(verb, uri, 
-          data=media_source.file_handle, headers=extra_headers)
+          data=media_source.file_handle, headers=extra_headers,
+          url_params=url_params)
       result_body = server_response.read()
 
     else:
@@ -1233,7 +1260,7 @@ class GDataService(atom.service.AtomService):
       content_type = 'application/atom+xml'
       extra_headers['Content-Type'] = content_type
       server_response = self.request(verb, uri, data=http_data,
-          headers=extra_headers)
+          headers=extra_headers, url_params=url_params)
       result_body = server_response.read()
 
     # Server returns 201 for most post requests, but when performing a batch
@@ -1335,13 +1362,12 @@ class GDataService(atom.service.AtomService):
 
     if self.__gsessionid is not None:
       if uri.find('gsessionid=') < 0:
-        if uri.find('?') > -1:
-          uri += '&gsessionid=%s' % (self.__gsessionid,)
-        else:
-          uri += '?gsessionid=%s' % (self.__gsessionid,)
+        if url_params is None:
+          url_params = {}
+        url_params['gsessionid'] = self.__gsessionid
  
     server_response = self.request('DELETE', uri, 
-        headers=extra_headers)
+        headers=extra_headers, url_params=url_params)
     result_body = server_response.read()
 
     if server_response.status == 200:

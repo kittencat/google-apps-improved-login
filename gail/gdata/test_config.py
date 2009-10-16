@@ -15,6 +15,8 @@
 # limitations under the License.
 
 
+import unittest
+import inspect
 import gdata.test_config_template
 import atom.mock_http_core
 
@@ -59,16 +61,19 @@ def configure_client(client, config, case_name):
   client.http_client.cache_case_name = case_name
   # Getting the auth token only needs to be done once in the course of test
   # runs.
-  if config.auth_token is None:
+  if config.auth_token is None and settings.RUN_LIVE_TESTS:
     client.http_client.cache_test_name = 'client_login'
     cache_name = client.http_client.get_cache_file_name()
     if settings.CLEAR_CACHE:
       client.http_client.delete_session(cache_name)
     client.http_client.use_cached_session(cache_name)
     config.auth_token = client.request_client_login_token(
-        config.email(), config.password(), config.service, case_name)
+        config.email(), config.password(), case_name, service=config.service)
     client.http_client.close_session()
-  client.auth_token = config.auth_token
+  # Allow a config auth_token of False to prevent the client's auth header
+  # from being modified.
+  if config.auth_token:
+    client.auth_token = config.auth_token
 
 
 def configure_cache(client, test_name):
@@ -119,7 +124,7 @@ def configure_service(service, config, case_name):
   service.http_client.v2_http_client.cache_case_name = case_name
   # Getting the auth token only needs to be done once in the course of test
   # runs.
-  if config.auth_token is None:
+  if config.auth_token is None and settings.RUN_LIVE_TESTS:
     service.http_client.v2_http_client.cache_test_name = 'client_login'
     cache_name = service.http_client.v2_http_client.get_cache_file_name()
     if settings.CLEAR_CACHE:
@@ -153,3 +158,47 @@ def close_service(service):
     # If this was a live request, save the recording.
     service.http_client.v2_http_client.close_session()
 
+
+def build_suite(classes):
+  """Creates a TestSuite for all unit test classes in the list.
+  
+  Assumes that each of the classes in the list has unit test methods which
+  begin with 'test'. Calls unittest.makeSuite.
+
+  Returns: 
+    A new unittest.TestSuite containing a test suite for all classes.   
+  """
+  suites = [unittest.makeSuite(a_class, 'test') for a_class in classes]
+  return unittest.TestSuite(suites)
+
+
+def check_data_classes(test, classes):
+  for data_class in classes:
+    test.assertTrue(data_class.__doc__ is not None,
+                    'The class %s should have a docstring' % data_class)
+    if hasattr(data_class, '_qname'):
+      qname_versions = (data_class._qname 
+                        if isinstance(data_class._qname, tuple)
+                        else (data_class._qname,))
+      for versioned_qname in qname_versions:
+        test.assertTrue(isinstance(versioned_qname, str),
+                        'The class %s has a non-string _qname' % data_class)
+        test.assertFalse(versioned_qname.endswith('}'), 
+                         'The _qname for class %s is only a namespace' % (
+                             data_class))
+
+    for attribute_name, value in data_class.__dict__.iteritems():
+      # Ignore all elements that start with _ (private members)
+      if not attribute_name.startswith('_'):
+        try:
+          if not (isinstance(value, str) or inspect.isfunction(value) 
+              or (isinstance(value, list)
+                  and issubclass(value[0], atom.core.XmlElement))
+              or issubclass(value, atom.core.XmlElement)):
+            test.fail(
+                'XmlElement member should have an attribute, XML class,'
+                ' or list of XML classes as attributes.')
+
+        except TypeError:
+          test.fail('Element %s in %s was of type %s' % (
+              attribute_name, data_class._qname, type(value)))

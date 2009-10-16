@@ -1,9 +1,10 @@
-application: mygailapp
+application: mygailapp 
 version: 1
 runtime: python
 api_version: 1
 
 handlers:
+
 - url: /robots.txt
   static_files: static/robots.txt
   upload: static/robots.txt
@@ -24,15 +25,15 @@ handlers:
   upload: static/fadeback.jpg
   secure: optional
 
-- url: /password
-  script: main.py
-  secure: optional
-
-- url: /dopassword
+- url: /dologin
   script: main.py
   secure: always
 
-- url: /dologin
+- url: /password
+  script: main.py
+  secure: always
+
+- url: /dopassword
   script: main.py
   secure: always
   
@@ -43,3 +44,27 @@ handlers:
 - url: /gailadmin
   script: main.py
   secure: always
+  login: admin
+
+- url: /newprivkey
+  script: main.py
+  secure: always
+  login: admin
+
+- url: /edittemplates
+  script: main.py
+  secure: optional
+  login: admin
+
+- url: /updategooglesso
+  script: main.py
+  secure: always
+  login: admin
+
+- url: /dfile
+  script: main.py
+  secure: optional
+
+- url: /upload-dfile
+  script: main.py
+  secure: optional

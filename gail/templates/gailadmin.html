@@ -37,27 +37,52 @@
         <table width="100%" border="0" cellspacing="5">
           <tr>
             <td><div align="right">Google Apps Domain:</div></td>
-            <td colspan="2"><input type="text" tabindex="1" name="domain" size="30" value="{{ domain }}"/></td>
+            <td colspan="2">{{ domain }}</td>
           </tr>
           <tr>
-            <td><div align="right"><input type="checkbox" tabindex="2" name="adminsbecomeusers" {{ adminsbecomeusers }}/></div></td>
-            <td><div align="left">Admins can login as users</div></td>
+            <td><div align="right">Admin Username: </div></td>
+            <td><input type="text" tabindex="4" name="adminuser" size="30" value="{{ adminuser }}" /></td>
           </tr>
           <tr>
-            <td><div align="right"><input type="checkbox" tabindex="3" name="usersbecomeusers" {{ usersbecomeusers }} /></div></td>
-            <td><div align="left">Users can login as users</div></td>
+            <td><div align="right">Admin Password: </div></td>
+            <td><input type="password" tabindex="4" name="adminpass" size="30" value="{{ adminpass }}" /></td>
           </tr>
           <tr>
-            <td><div align="right">Administrator Username: </div></td>
-            <td><input type="text" tabindex="4" name="adminuser" size="12" value="{{ adminuser }}" /></td>
+            <td><div align="right">Admins can login as users</div></td>
+            <td><input type="radio" name="adminsbecomeusers" value="True" {% ifequal adminsbecomeusers 'True' %}checked{% endifequal %}>Enabled <input type="radio" name="adminsbecomeusers" value="False" {% ifequal adminsbecomeusers 'False' %}checked{% endifequal %}>Disabled</td>
           </tr>
           <tr>
-            <td><div align="right">Administrator Password: </div></td>
-            <td><input type="password" tabindex="4" name="adminpass" size="12" value="{{ adminpass }}" /></td>
+            <td><div align="right">Users can login as users</div></td>
+            <td><input type="radio" name="usersbecomeusers" value="True" {% ifequal usersbecomeusers 'True' %}checked{% endifequal %}>Enabled <input type="radio" name="usersbecomeusers" value="False" {% ifequal usersbecomeusers 'False' %}checked{% endifequal %}>Disabled</td>
           </tr>
           <tr>
-            <td colspan="2"><input name="Save" tabindex="5" type="submit" value="Save"><input name="Back to Login" tabindex="6" type="button" onclick="window.location.href='/'" value="Back to Login"></td>
+            <td><div align="right">Private Key Version</div></td>
+            <td>{{ privkey_ver }}</td>
           </tr>
+          <tr>
+            <td><div align="right">Keys Match?</div></td>
+            <td>{{ keymatch }}</td>
+          </tr>
+          <tr></tr>
+          <tr>
+            <td>
+            </td>
+            <td><input name="Save" tabindex="5" type="submit" value="Save">
+            </td>
+          </tr>
+          <tr>
+            <td>New Private Key: Generates a new private key that GAIL will use to sign requests.  Login will not work for users until "Update Google SSO Settings" is run so that Google Apps has the updated public key matching the new private key.</td>
+         <td><input name="New Private Key" tabindex="7" type="button" onclick="window.location.href='/newprivkey'" value="New Private Key">
+         </td>
+         </tr>
+         <tr>
+           <td>Update Google SSO Settings: Sets Google SSO Settings in order to enable GAIL, also uploads the public key corresponding to the current private key.</td>
+           <td><input name="Update Google SSO Settings" tabindex="8" type="button" onclick="window.location.href='/updategooglesso'" value="Update Google SSO Settings"></td>
+         </tr>
+         <tr>
+           <td>Edit Templates: modify the HTML code of the login and password pages.</td>
+           <td><input name="Edit Templates" type="button" onclick="window.location.href='/edittemplates'" value="Edit Templates"></td>
+        </tr>
         </table>
         </form>
       </td>
