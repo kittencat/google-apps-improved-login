@@ -1,0 +1,68 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <style type="text/css">
+  	  <!--
+        body {
+	      background-image: url(fadeback.jpg);
+	      background-repeat: repeat-x;
+        }
+      -->
+	</style>
+    <title>Edit Templates for {{ domain }}</title>
+    <link href="gail.css" rel="stylesheet" type="text/css" />
+    <link rel="icon" type="image/icon" href="/favicon.ico" />
+  </head>
+  <body onload="document.templates.login-html.focus();">
+    <table width=90% border="0" align="center" cellpadding="10" bgcolor="#FFFFFF" class="border">
+      <tr>
+        <td colspan="2"><div align="center">
+		  <a href="https://mail.google.com/a/{{ domain }}">
+		  <image src="https://www.google.com/a/cpanel/{{ domain }}/images/logo.gif"
+   		    alt="Google Apps Login" width="143" height="59" border="0">
+		  </a><br />
+          <hr noshade="noshade" size="1" />
+        </div></td>
+	  </tr>
+          <form name="templates" action="https://{{ appspot_domain }}/edittemplates" method="post">
+	  <tr>
+	    <td colspan="2" valign="top">Login Page for {{ domain }}.:<br>
+            <textarea name="login-html" rows="30" cols="120">
+            {{ login_template_data }}
+            </textarea><br>
+            Reset login page to default: <input type="checkbox" name="resetloginpage">
+            </td>
+          </tr>
+          <tr>
+            <td colspan="2" valign="top">Password Page for {{ domain }}.:<br>
+            <textarea name="password-html" rows="30" cols="120">
+            {{ password_template_data }}
+            </textarea><br>
+            Reset password page to default: <input type="checkbox" name="resetpasswordpage">
+            </td>
+          </tr>
+          <tr>
+            <td colspan="2"><input name="Update Templates" type="submit" value="Update Templates"></form><input name="Back to Gail Admin" type="button" onclick="window.location.href='/gailadmin'" value="Back to Gail Admin"></td>
+          </tr>
+          <tr><td>
+            <form id="upload_form" action="http://{{ appspot_domain }}/upload-dfile" enctype="multipart/form-data" method="post">
+            File: <input type="file" name="file">
+            <input type="submit" value="Upload"></form>
+<table border="1">
+  <tr>
+    <th>File:</th>
+    <th>Mime:</th>
+  </tr>
+  {% for file in filelist %}
+  <tr>
+    <td>{{ file.file_name|escape }}</td>
+    <td>{{ file.file_type|escape }}</td>
+  </tr>
+  {% endfor %}
+</table>
+          </td><tr>
+        </table>
+        </form>
+  </body>
+</html>
