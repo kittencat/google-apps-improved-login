@@ -1,0 +1,5 @@
+> You may notice or receive reports from your users that their login failed with a message that their "Account has been locked" and to follow a link to unlock the account.  This occurs because Google believes that brute force efforts were made against the user's account in order to guess the password.  Google uses a [Captcha](http://en.wikipedia.org/wiki/Captcha) in order to verify that they are dealing with a real human being and not a computer script trying to randomly guess the account password.
+
+> To prevent Captchas, make sure your users know their passwords and that the password isn't overly complex (if they mistype it more than 50% of the time, it's to hard).  The user's account may also be locked because of failed POP3 or IMAP attempts so if the user has POP3 or IMAP enabled and isn't using it, turn it off.
+
+> Note that GAIL 0.2a has an unfortunate bug which directs the end user to the wrong page to unlock their account.  This has been corrected in 0.3a
